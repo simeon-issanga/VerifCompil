@@ -1,0 +1,98 @@
+
+# SYSTÈME ET IDE
+
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+
+#  PYTHON & LLM (DeepSeek)
+
+# Fichiers générés par Python
+__pycache__/
+*.py[ocd]
+build/
+dist/
+wheels/
+*.egg-info/
+
+# Environnements virtuels
+.venv/
+venv/
+env/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# Modèles IA, Poids et Datasets (Très lourd, à ne JAMAIS commit)
+*.pt
+*.pth
+*.safetensors
+*.gguf
+*.bin
+*.h5
+*.onnx
+datasets/
+*.csv
+*.jsonl
+*.parquet
+
+# Logs d'entraînement (TensorBoard, Weights & Biases, etc.)
+logs/
+runs/
+wandb/
+
+
+#  SYMFONY (PHP)
+
+# Dépendances Composer
+/vendor/
+
+# Fichiers de configuration locaux (mots de passe, BDD)
+.env.local
+.env.local.php
+.env.*.local
+phpunit.xml
+
+# Cache et Logs Symfony
+/var/cache/
+/var/log/
+/var/sessions/
+/var/coverage/
+
+# Fichiers générés publiquement
+/public/bundles/
+/public/build/
+
+
+# COMPILATEUR C (Binaire & Build)
+
+# Fichiers objets et bibliothèques
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+
+# Exécutables
+*.out
+*.exe
+*.app
+
+# Dossiers de build (CMake, Make, etc.)
+/bin/
+/obj/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+
+# (Optionnel) Fichiers générés par Flex/Bison si tu les utilises pour ton compilateur
+# lex.yy.c
+# y.tab.c
+# y.tab.h
+# y.output
+
