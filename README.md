@@ -7,8 +7,8 @@ Ce projet a été réalisé durant notre stage en Espagne. Il s'agit d'un site i
 
 ## Contributeurs 
 
-* Lucas Oustaloup [Lucas Oustaloup](https://github.com/LucasOtlp)
-* Simeon Issanga--Peyrot [Siméon Issanga--Peyrot](https://github.com/simeon-issanga)
+* [Lucas Oustaloup](https://github.com/LucasOtlp)
+* [Siméon Issanga--Peyrot](https://github.com/simeon-issanga)
 
 ## Installation et Configuration
 
