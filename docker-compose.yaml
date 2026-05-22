@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # frontend (React.js propulse par Node)
+  web:
+    build: ./site
+    container_name: serveur-verif_compil
+    env_file:
+      - config/env/.env
+    environment:
+      - no_proxy=localhost,127.0.0.1,pythonserver,nginx-proxy
+      - NO_PROXY=localhost,127.0.0.1,pythonserver,nginx-proxy
+    volumes:
+
+      - ./site/:/app
+      - /app/node_modules
+    depends_on:
+      - pythonserver
+    networks:
+      - verif_compil
+
+  # backend (Python IA & Compilateur)
+  pythonserver:
+    build: ./serveurPython
+    container_name: pythonserver-verif_compil
+    env_file:
+      - config/env/.env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - API_KEY_DEEPSEEK=ta_cle_secrete_ici
+      - HTTP_PROXY=http://cache.univ-pau.fr:3128
+      - HTTPS_PROXY=http://cache.univ-pau.fr:3128
+      - http_proxy=http://cache.univ-pau.fr:3128
+      - https_proxy=http://cache.univ-pau.fr:3128
+      - no_proxy=localhost,127.0.0.1,web,nginx-proxy
+      - NO_PROXY=localhost,127.0.0.1,web,nginx-proxy
+    networks:
+      - verif_compil
+
+  # Routeur Nginx
+  nginx-proxy:
+    image: 'nginx:stable-alpine'
+    restart: unless-stopped
+    ports:
+      - '8080:80'
+    volumes:
+      - ./config/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    environment:
+      - HTTP_PROXY=http://cache.univ-pau.fr:3128
+      - HTTPS_PROXY=http://cache.univ-pau.fr:3128
+      - http_proxy=http://cache.univ-pau.fr:3128
+      - https_proxy=http://cache.univ-pau.fr:3128
+      - NO_PROXY=localhost,127.0.0.1,web,pythonserver,serveur-verif_compil
+      - no_proxy=localhost,127.0.0.1,web,pythonserver,serveur-verif_compil
+    depends_on:
+      - web
+      - pythonserver
+    networks:
+      - verif_compil
+
+networks:
+  verif_compil:
+    driver: bridge
