@@ -13,16 +13,23 @@ export default function App() {
           body: JSON.stringify({ code: codeC })
         })
 
-      const donnees = await reponse.json()
+      const texteBrut = await reponse.text()
       
-      if (donnees.status === 'success') {
-        setReponseIA(donnees.message)
-      } else {
-        setReponseIA("Erreur du serveur : " + donnees.message)
+      try {
+        const donnees = JSON.parse(texteBrut)
+        if (donnees.status === 'success') {
+            setReponseIA(donnees.message)
+        } else {
+            setReponseIA("Erreur du serveur : " + donnees.message)
+        }
+
+      } catch (erreurParse) {
+        // 4. Si la transformation plante (ce n'est pas du JSON), on affiche l'erreur brute
+        setReponseIA("Erreur inattendue (Nginx ou plantage Flask) :\n\n" + texteBrut)
       }
     
     }catch (error) {
-      console.error('Erreur lors de l\'envoi du code :', error)
+      setReponseIA('Erreur de réseau ou serveur injoignable : ' + error.message)
     }
   }
   

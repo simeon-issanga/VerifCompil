@@ -27,13 +27,14 @@ services:
       - config/env/.env
     environment:
       - PYTHONUNBUFFERED=1
-      - API_KEY_DEEPSEEK=ta_cle_secrete_ici
       - HTTP_PROXY=http://cache.univ-pau.fr:3128
       - HTTPS_PROXY=http://cache.univ-pau.fr:3128
       - http_proxy=http://cache.univ-pau.fr:3128
       - https_proxy=http://cache.univ-pau.fr:3128
       - no_proxy=localhost,127.0.0.1,web,nginx-proxy
       - NO_PROXY=localhost,127.0.0.1,web,nginx-proxy
+      - no_proxy=localhost,127.0.0.1,web,nginx-proxy,10.3.17.220,192.168.78.90
+      - NO_PROXY=localhost,127.0.0.1,web,nginx-proxy,10.3.17.220,192.168.78.90
     networks:
       - verif_compil
 
