@@ -18,7 +18,7 @@ export default function App() {
       try {
         const donnees = JSON.parse(texteBrut)
         if (donnees.status === 'success') {
-            setReponseIA(donnees.message)
+            setReponseIA(JSON.stringify(donnees, null, 3))
         } else {
             setReponseIA("Erreur du serveur : " + donnees.message)
         }
