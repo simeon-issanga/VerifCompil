@@ -35,34 +35,28 @@ export default function App() {
   
   return (
     <>
-    
       <h1>Ceci est une page de fou</h1>
-      <div class="container" >
-        <Encadre langage="C"/>
+      <div className="flex-container" >
+        <Encadre langage="C" placeholder="entrer votre code C ici" onChange={(e) => setCodeC(e.target.value)} />
         <Encadre langage="IR"/>
       </div>
-      <textarea 
-            value={codeC}
-            onChange={(e) => setCodeC(e.target.value)}
-            placeholder="Entrez votre code C ici"
-      />
-      <button onClick={envoyer}>Envoyer</button>
-           
+      <button onClick={envoyer}>Traduire</button>
       <div>{reponseIA}</div>
+      
     </>
   )
 }
 
 
-function Encadre({langage}){
+function Encadre({langage, placeholder, onChange}){
 
 
   return (
     <div>
       <div>
-        <p>code en {langage}</p>
+        <h2>code en {langage}</h2>
       </div>
-      <input type="text"></input>
+      <textarea placeholder={placeholder} onChange={onChange}></textarea>
     </div>
   );
 }

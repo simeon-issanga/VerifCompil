@@ -1,5 +1,21 @@
 
-.container {
+
+h2 {
+  text-align: center;
+}
+
+
+div.flex-container {
   display: flex;
-  
+  flex-direction: row;
+}
+
+textarea {
+  resize: none;
+  width: 100%;
+  min-height: 600px;
+}
+
+div.flex-container > div {
+  flex: 1;
 }
