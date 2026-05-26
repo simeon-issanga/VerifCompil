@@ -52,15 +52,9 @@ def compile_code():
             "liste_ll": ["%1 = alloca i32\\nstore i32 5, i32* %1", "ret i32 0"],
             "liste_explication": ["Cette ligne alloue de la mémoire pour une variable entière et stocke la valeur 5 dedans.", "Cette ligne retourne la valeur 0 pour indiquer que le programme s'est terminé avec succès."]
         }
-        Les trois listes doivent avoir exactement la même taille. L'index 0 de liste_c correspond à l'index 0 de liste_ll et à l'index 0 de liste_explication. Si une ligne du code C correspond à plusieurs lignes LLVM-IR, tu dois 
-        les mettres dans une liste. Par exemple :
-        {
-            "liste_c": ["scanf("%d", &nombreSaisi);"],
-            "liste_ll": [[%18 = call i32 (ptr, ...) @printf(ptr noundef @.str.2) ], [%19 = call i32 (ptr, ...) @__isoc99_scanf(ptr noundef @.str.3, ptr noundef %3)]]
-            "liste_explication": ["Cette ligne correspond à deux appels de fonctions : un pour afficher le message de saisie et un autre pour lire la valeur saisie par l'utilisateur."]
-        }
+        Exceptions : Si une instruction du code C correspond à plusieurs instructions LLVM IR je veux une liste de listes pour l'élément de "liste_ll[i]"
+        Les trois listes doivent avoir exactement la même taille. L'index 0 de liste_c correspond à l'index 0 de liste_ll et à l'index 0 de liste_explication.
         """
-
         reponse = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[

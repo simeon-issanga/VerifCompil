@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
 import './App.css'
 import Editor from "./Editor"
 
@@ -23,6 +23,16 @@ export default function App() {
   
   const [explications, setExplications] = useState('');
 
+  const [laDonnes, setLaDonnes] = useState('');
+  // ... à l'intérieur de ton composant App ...
+  useEffect(() => {
+    console.log("reponseIA a changé :", reponseIA);
+  }, [reponseIA]); // Cette fonction s'exécutera chaque fois que reponseIA change
+
+
+
+
+
   function handleOver(index){
     console.log(index);
     setExplications(reponseIA[1][index]);
@@ -32,6 +42,7 @@ export default function App() {
   const handleValidate = async() => {
     const codeC = inputRef.current.state.doc.toString()
     
+    console.log("Code C envoyé à l'IA ");
     try {
       const reponse = await fetch('/api/compile', {
         method: 'POST',
@@ -43,11 +54,15 @@ export default function App() {
         
       try {
         const donnees = JSON.parse(texteBrut)
+        console.log("Données reçues de l'IA :", donnees);
+
+        setLaDonnes(JSON.stringify(donnees));
         if (donnees.status === 'success') {
           let result = JSON.stringify(donnees, null, 3);
+          console.log("Résultat formaté :", result);
           setReponseIA([result["liste_c"], result["liste_explication"],result["liste_ll"]]); //TODO decomenter
           //on créé la chaine de caractère qui va être affichée dans l'autre éditeur
-          console.log(reponseIA);
+          /*
           var code = "";
           for (let elem of reponseIA[2]){
             code+= elem+"\n";
@@ -59,7 +74,7 @@ export default function App() {
               to: outputRef.current.state.doc.length,
               insert: code, //à reformater
             }
-          });
+          });*/
         } else {
           setReponseIA("Erreur du serveur : " + donnees.message);
         }
@@ -119,10 +134,10 @@ export default function App() {
         extensions={outputExtensions}
         />
       </div>
-      <button onClick={handleValidate}>Valider</button>
       
-      //TODO ici encadre
-      <button onClick={handleValidate}>Traduire</button>
+      <button onClick={handleValidate}>Valider</button>
+      <div className="div">{laDonnes}</div>
+      {/*TODO ici encadre*/}
 
       <div>{explications}</div>
       
