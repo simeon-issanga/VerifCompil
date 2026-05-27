@@ -1,12 +1,15 @@
 import { ViewPlugin, EditorView, Decoration } from "@codemirror/view"
 import { RangeSetBuilder } from "@codemirror/state"
 
+// on stocke la référence au plugin créé pour que lineClickHandler puisse y accéder
+let pluginRefs = new Map()
 
-export const lineHoverHighlighter = ViewPlugin.fromClass( //méthode statique qui prend la classe et l'enregistre auprès de l'éditeur
+export function createLineHoverHighlighter(lesCouleurs, lesExplications, tabNumLignesCodeIR, setExplication, editorKey, editeurJumeau) {
+  const plugin = ViewPlugin.fromClass( //méthode statique qui prend la classe et l'enregistre auprès de l'éditeur
     //déclaration d'une classe anonyme
     class {
         constructor(view) { //CM6 passe automatiquement la EditorView en argument
-            this.hoveredLine = null
+            this.hoveredLine = []
             this.decorations = this.build(view) // attribut imposé par CM6 — c'est lui qu'il lit pour savoir quoi afficher
         }
 
@@ -16,8 +19,30 @@ export const lineHoverHighlighter = ViewPlugin.fromClass( //méthode statique qu
         }
 
         setHoveredLine(view, lineNumber) { //lineClickHandler l'appellera via view.plugin(lineHoverHighlighter) pour dire au plugin quelle ligne est survolée.
-            this.hoveredLine = lineNumber
+            
+            if (lineNumber !== []){
+                var numBloc = 0;
+                for (let indiceBloc in tabNumLignesCodeIR){
+                    for (let ligne of tabNumLignesCodeIR[indiceBloc]){
+                        if (lineNumber === ligne){
+                            this.hoveredLine = tabNumLignesCodeIR[indiceBloc];
+                            numBloc = indiceBloc;
+                        }
+                    }
+                }
+            } else {
+                this.hoveredLine = [];
+            }
+            console.log(this.hoveredLine);
+            
+            //this.hoveredLine = lineNumber
             this.decorations = this.build(view)
+
+            if (lineNumber !== []) {
+                setExplication(lesExplications[numBloc] ?? '')
+            } else {
+                setExplication('');
+            }
         }
 
         build(view) { //Calcule et retourne un RangeSet — la liste de toutes les décorations à appliquer.
@@ -25,12 +50,13 @@ export const lineHoverHighlighter = ViewPlugin.fromClass( //méthode statique qu
             for (const { from, to } of view.visibleRanges) {
                 let pos = from
                 while (pos <= to) {
-                    const line = view.state.doc.lineAt(pos)
-                    const isHovered = line.number === this.hoveredLine
+                    const line = view.state.doc.lineAt(pos);
+                    const deco = lesCouleurs[line.number-1]
+                    const isHovered = this.hoveredLine.includes(line.number);
                     builder.add(
                         line.from, 
                         line.from, 
-                        Decoration.line({ attributes: { style: isHovered ? "background: #111111" : "" } }) //Méthode statique de CM6 qui crée une décoration de type "ligne entière"
+                        Decoration.line({ attributes: { style: isHovered ? "background: #ffffff" : deco } }) //Méthode statique de CM6 qui crée une décoration de type "ligne entière"
                     )
                     pos = line.to + 1
                 }
@@ -41,6 +67,9 @@ export const lineHoverHighlighter = ViewPlugin.fromClass( //méthode statique qu
     }, 
     { decorations: v => v.decorations })
 
+    pluginRefs.set(editorKey, plugin)  // clé unique par éditeur
+    return plugin
+}
 
 export const lineClickHandler = EditorView.domEventHandlers({ //méthode statique qui crée une extension écoutant les événements DOM
 
@@ -52,27 +81,40 @@ export const lineClickHandler = EditorView.domEventHandlers({ //méthode statiqu
     },
 
     mousemove(event, view) {
-        console.log(`la souris bouge`);
-        const pos = view.posAtCoords({ x: event.clientX, y: event.clientY })
-        const plugin = view.plugin(lineHoverHighlighter)
-        if (!plugin) return
-
-        if (pos === null) {
-            plugin.setHoveredLine(view, null)
-        } else {
-            const line = view.state.doc.lineAt(pos)
-            plugin.setHoveredLine(view, line.number)
+        if (!pluginRefs) return  // pas encore de plugin créé
+        for (const [key, pluginRef] of pluginRefs) {
+            const plugin = view.plugin(pluginRef)
+            if (plugin) {  // ← null si pas le bon, instance si c'est le bon
+                const pos = view.posAtCoords({ x: event.clientX, y: event.clientY })
+            if (pos === null) {
+                plugin.setHoveredLine(view, [])
+            } else {
+                const line = view.state.doc.lineAt(pos)
+                plugin.setHoveredLine(view, line.number)
+            }
+            view.dispatch({})
+            break
+            }
         }
-        view.dispatch({})
     },
 
+
+
+
+
+
+
+
+    //TODO : quand on quitte, il reste une selection en blanc et la première explication (indice0) apparaît
     mouseleave(event, view) {
         console.log(`la souris quitte`);
-        const plugin = view.plugin(lineHoverHighlighter)
-        if (plugin) {
-            plugin.setHoveredLine(view, null)
-            view.dispatch({})
+        for (const [key, pluginRef] of pluginRefs) {
+            const plugin = view.plugin(pluginRef)
+            if (plugin) {
+                plugin.setHoveredLine(view, [])
+                view.dispatch({})
+            }
         }
     }
-    
+
 })

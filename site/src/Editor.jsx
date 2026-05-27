@@ -6,10 +6,9 @@ import { cpp } from "@codemirror/lang-cpp"
 import {irLanguage, irHighlight} from "./IRLanguage"
 import { tags } from "@lezer/highlight"
 import { StreamLanguage, HighlightStyle, syntaxHighlighting } from "@codemirror/language"
-import { lineHighlighter } from "./LineHighlighter"
 
 
-export default function Editor({ editorRef, doc="",extensions }) {
+export default function Editor({ editorRef, doc="",extensions, langage }) {
     
     const containerRef = useRef(null)
 
@@ -31,5 +30,10 @@ export default function Editor({ editorRef, doc="",extensions }) {
         }
     }, [])
 
-    return <div ref={containerRef} />
+    return(
+        <div>
+        <h2>code en {langage}</h2>
+        <div ref={containerRef} />
+        </div>
+    )
 }
