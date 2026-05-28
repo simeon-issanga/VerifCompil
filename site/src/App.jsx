@@ -26,53 +26,11 @@ export default function App() {
   const [explications, setExplications] = useState('');
 
 
-  const handleValidate = async() => {
-    const codeC = inputRef.current.state.doc.toString()
-    
-    try {
-      const reponse = await fetch('/api/compile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: codeC })
-      })
-
-      const texteBrut = await reponse.text()
-        
-      try {
-        const donnees = JSON.parse(texteBrut)
-        if (donnees.status === 'success') {
-          let result = JSON.stringify(donnees, null, 3);
-          //setReponseIA([result["liste_c"], result["liste_explication"],result["liste_ll"]]); TODO decomenter
-          //on créé la chaine de caractère qui va être affichée dans l'autre éditeur
-          var code = "";
-          for (let elem of reponseIA[2]){
-            code+= elem+"\n";
-          }
-          //on met à jour l'autre éditeur
-          outputRef.current.dispatch({
-            changes: {
-              from: 0,
-              to: outputRef.current.state.doc.length,
-              insert: code, //à reformater
-            }
-          });
-        } else {
-          setReponseIA("Erreur du serveur : " + donnees.message);
-        }
-      } catch (erreurParse) {
-        // 4. Si la transformation plante (ce n'est pas du JSON), on affiche l'erreur brute
-        setReponseIA("Erreur inattendue (Nginx ou plantage Flask) :\n\n" + texteBrut)
-      }
-    }catch (error) {
-      setReponseIA('Erreur de réseau ou serveur injoignable : ' + error.message)
-    }
-  }
-
   function handleTemp(){
     const codeC = inputRef.current.state.doc.toString()
 
     var code = "";
-    var h = 0; //hue
+    var h = 150; //hue
     var lesCouleursOutput = [];
     var lesCouleursInput = [];
     var tabNumLignesCodeIR = []; //représente la structure du code IR en blocs
@@ -106,12 +64,28 @@ export default function App() {
 
     outputRef.current.dispatch({
       effects: outputHighlighterCompartment.reconfigure(
-        createLineHoverHighlighter(lesCouleursOutput, reponseIA[1], tabNumLignesCodeIR, setExplications, 2, inputRef)
+        createLineHoverHighlighter(
+          lesCouleursOutput, 
+          reponseIA[1], 
+          tabNumLignesCodeC,
+          tabNumLignesCodeIR, 
+          setExplications, 
+          'output', 
+          inputRef,
+          outputRef)
       )
     })
     inputRef.current.dispatch({
       effects: inputHighlighterCompartment.reconfigure(
-        createLineHoverHighlighter(lesCouleursInput, reponseIA[1], tabNumLignesCodeC, setExplications, 1, outputRef)
+        createLineHoverHighlighter(
+          lesCouleursInput, 
+          reponseIA[1], 
+          tabNumLignesCodeC,
+          tabNumLignesCodeIR, 
+          setExplications, 
+          'input', 
+          inputRef,
+          outputRef)
       )
     })
   }
@@ -121,7 +95,6 @@ export default function App() {
     keymap.of([...defaultKeymap, ...historyKeymap]),
     lineNumbers(),
     cpp(),
-
     inputHighlighterCompartment.of([]),
     lineClickHandler,
   ]
@@ -136,22 +109,24 @@ export default function App() {
 
   return (
     <>
-      <h1>traduction de C vers LLVM - IR</h1>
-
       <div className="flex-container">
-        <Editor editorRef={inputRef} 
+        <Editor
+          editorRef={inputRef} 
           doc={"int main() {\n    printf(\"Hello, world!\\n\");\n    return 0;\n}"}
           extensions={inputExtensions}
           langage="C"
         />
-        <Editor editorRef={outputRef}
+        <Editor
+          editorRef={outputRef}
           extensions={outputExtensions}
           langage="IR"
         />
       </div>
-      <button onClick={handleTemp}>Valider</button>
+      <div>
+        <button className="btnValider" onClick={handleTemp}>Valider</button>
+      </div>
       
-      <div>{explications}</div>
+      <div className="explications">{explications}</div>
       
     </>
   )

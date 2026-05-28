@@ -2,6 +2,9 @@
 
 h2 {
   text-align: center;
+  color:rgb(79, 63, 41);
+  background-color: rgb(49, 185, 192);
+  border: 2px dashed;
 }
 
 
@@ -10,12 +13,23 @@ div.flex-container {
   flex-direction: row;
 }
 
-textarea {
-  resize: none;
-  width: 100%;
-  min-height: 600px;
-}
-
 div.flex-container > div {
   flex: 1;
+}
+
+.editor {
+  margin: 10px 20px;
+
+}
+
+.btnValider {
+  display: block;
+  border-radius: 10px;
+  background-color: #43a45c;
+  width: 100px;
+  margin: 10px auto;
+}
+
+.explications {
+  background-color: antiquewhite;
 }

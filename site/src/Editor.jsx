@@ -31,9 +31,9 @@ export default function Editor({ editorRef, doc="",extensions, langage }) {
     }, [])
 
     return(
-        <div>
-        <h2>code en {langage}</h2>
-        <div ref={containerRef} />
+        <div className="editor">
+            <h2>code en {langage}</h2>
+            <div ref={containerRef} />
         </div>
     )
 }
