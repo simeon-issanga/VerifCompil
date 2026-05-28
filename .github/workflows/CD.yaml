@@ -1,0 +1,48 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    
+jobs:
+  test:
+    name: Lancement Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run unit tests
+        run: echo "Ici on lance les tests"
+   
+  deploy:
+    name: Deploiement serveur
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: self-hosted
+    steps:
+    
+      - name: Verification code
+        uses: actions/checkout@v6
+
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            python:
+              - 'serveurPython/app.py'
+              
+      - name: Crée .env
+        run: |
+          mkdir -p config/env
+          echo "${{ secrets.ENV_FILE_CONTENT }}" > config/env/.env
+          
+      - name: Relancer et maj python
+        if: steps.changes.outputs.python == 'true'
+        run: | 
+          docker compose up --build -V -d pythonserver 
+
+      - name: Relance le docker 
+        if: steps.changes.outputs.python == 'false'
+        run: |
+          docker compose up --build 
