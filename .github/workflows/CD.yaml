@@ -43,4 +43,4 @@ jobs:
       - name: Relancer tout (Frontend/Nginx) si pas de changement Python
         if: steps.changes.outputs.python == 'false'
         run: |
-          docker compose up --build -d
+          docker compose restart web
