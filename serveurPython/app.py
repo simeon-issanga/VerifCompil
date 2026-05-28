@@ -3,6 +3,7 @@ import subprocess
 from openai import OpenAI
 import os
 import json
+import uuid
 
 app = Flask(__name__)
 
@@ -14,6 +15,9 @@ client = OpenAI(
 @app.route('/api/compile', methods=['POST'], strict_slashes=False)
 @app.route('/compile', methods=['POST'], strict_slashes=False)
 def compile_code():
+    uid = str(uuid.uuid4())
+    file_path = f"temp_{uid}.c"
+    output_path = f"temp_{uid}.ll"
     try:
         donnes = request.get_json()
         code_c = donnes.get('code', '')
@@ -26,8 +30,8 @@ def compile_code():
         with open(file_path, "w") as file:
             file.write(code_c)
 
-        commande_bash = ["clang", file_path, "-emit-llvm", "-S", "-c", "-o", "result_file.ll"]
-        resultat_terminal = subprocess.run(commande_bash, capture_output=True, text=True)
+        commande_bash = ["clang", file_path, "-emit-llvm", "-S", "-c", "-o", output_path]
+        resultat_terminal = subprocess.run(commande_bash, capture_output=True, text=True, timeout=15)
 
         if os.path.exists(file_path):
             os.remove(file_path)
@@ -81,6 +85,10 @@ def compile_code():
             "status": "error",
             "message": f"Erreur interne du serveur Python : {str(e)}"
         }), 500
+
+    finally:
+        if os.path.exists(file_path): os.remove(file_path)
+        if os.path.exists(output_path): os.remove(output_path)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

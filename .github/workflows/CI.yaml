@@ -1,0 +1,30 @@
+name: CI-VerifCompil         
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]                  
+
+jobs:
+  verification-projet:        
+    runs-on: ubuntu-latest   
+
+    steps:                      
+      
+      - name: Recup fichier
+        uses: actions/checkout@v4 # télécharge fichiers
+
+      - name: Fonction B 
+        run: |
+          cd serveurPython
+          python3 -m py_compile app.py 
+
+      - name: Front
+        run: |
+          cd site
+          npm install                  # Installe les paquets
+          npm run build                # Tente de construire le site (le build)
+
+      - name: Resultat
+        run: echo "CI ok"

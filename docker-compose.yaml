@@ -7,9 +7,7 @@ services:
     container_name: serveur-verif_compil
     env_file:
       - config/env/.env
-    environment:
-      - no_proxy=localhost,127.0.0.1,pythonserver,nginx-proxy
-      - NO_PROXY=localhost,127.0.0.1,pythonserver,nginx-proxy
+    
     volumes:
 
       - ./site/:/app
@@ -27,14 +25,7 @@ services:
       - config/env/.env
     environment:
       - PYTHONUNBUFFERED=1
-      - HTTP_PROXY=http://cache.univ-pau.fr:3128
-      - HTTPS_PROXY=http://cache.univ-pau.fr:3128
-      - http_proxy=http://cache.univ-pau.fr:3128
-      - https_proxy=http://cache.univ-pau.fr:3128
-      - no_proxy=localhost,127.0.0.1,web,nginx-proxy
-      - NO_PROXY=localhost,127.0.0.1,web,nginx-proxy
-      - no_proxy=localhost,127.0.0.1,web,nginx-proxy,10.3.17.220,192.168.78.90
-      - NO_PROXY=localhost,127.0.0.1,web,nginx-proxy,10.3.17.220,192.168.78.90
+      
     networks:
       - verif_compil
 
@@ -46,13 +37,7 @@ services:
       - '8080:80'
     volumes:
       - ./config/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-    environment:
-      - HTTP_PROXY=http://cache.univ-pau.fr:3128
-      - HTTPS_PROXY=http://cache.univ-pau.fr:3128
-      - http_proxy=http://cache.univ-pau.fr:3128
-      - https_proxy=http://cache.univ-pau.fr:3128
-      - NO_PROXY=localhost,127.0.0.1,web,pythonserver,serveur-verif_compil
-      - no_proxy=localhost,127.0.0.1,web,pythonserver,serveur-verif_compil
+    
     depends_on:
       - web
       - pythonserver

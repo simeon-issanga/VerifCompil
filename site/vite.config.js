@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: true,
+    allowedHosts: ['socarrat.unizar.es'],
     port: 5173,
     watch: {
       usePolling: true
