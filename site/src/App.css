@@ -19,7 +19,6 @@ div.flex-container > div {
 
 .editor {
   margin: 10px 20px;
-
 }
 
 .btnValider {
@@ -28,6 +27,11 @@ div.flex-container > div {
   background-color: #43a45c;
   width: 100px;
   margin: 10px auto;
+}
+
+.btnNavigation {
+  display: block;
+  margin: 10px 
 }
 
 .explications {

@@ -32,7 +32,7 @@ export default function Editor({ editorRef, doc="",extensions, langage }) {
 
     return(
         <div className="editor">
-            <h2>code en {langage}</h2>
+            <h2>{langage}</h2>
             <div ref={containerRef} />
         </div>
     )
