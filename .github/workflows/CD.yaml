@@ -3,46 +3,44 @@ name: CD Pipeline
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
-    
+
 jobs:
   test:
     name: Lancement Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - name: Run unit tests
-        run: echo "Ici on lance les tests"
-   
+      - uses: actions/checkout@v4
+      - name: Check Python Syntax
+        run: python3 -m py_compile serveurPython/app.py
+
   deploy:
     name: Deploiement serveur
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: self-hosted
+    runs-on: self-hosted  # Ta machine Socarrat
     steps:
-    
       - name: Verification code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+
+      - name: Crée dossier config et fichier .env
+        run: |
+          mkdir -p config/env
+          echo "${{ secrets.ENV_FILE_CONTENT }}" > config/env/.env
+          chmod 600 config/env/.env
 
       - uses: dorny/paths-filter@v3
         id: changes
         with:
           filters: |
             python:
-              - 'serveurPython/app.py'
-              
-      - name: Crée .env
-        run: |
-          mkdir -p config/env
-          echo "${{ secrets.ENV_FILE_CONTENT }}" > config/env/.env
-          
-      - name: Relancer et maj python
+              - 'serveurPython/**' # Surveille tout le dossier Python
+
+      - name: Relancer uniquement Python si changement
         if: steps.changes.outputs.python == 'true'
         run: | 
-          docker compose up --build -V -d pythonserver 
+          docker compose up --build -d pythonserver 
 
-      - name: Relance le docker 
+      - name: Relancer tout (Frontend/Nginx) si pas de changement Python
         if: steps.changes.outputs.python == 'false'
         run: |
-          docker compose up --build 
+          docker compose up --build -d
