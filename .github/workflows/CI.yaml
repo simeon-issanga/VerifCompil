@@ -15,6 +15,11 @@ jobs:
       - name: Recup fichier
         uses: actions/checkout@v4 # télécharge fichiers
 
+      - name: Test de la fonction de compilation
+        run: |
+          sudo apt-get install -y clang
+          python3 tests/test_compilation.py
+
       - name: Fonction B 
         run: |
           cd serveurPython
