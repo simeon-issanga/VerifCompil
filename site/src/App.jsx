@@ -94,11 +94,13 @@ export default function App() {
     ];
 
     console.log(reponseIA);
-    //TODO : mettre au bon endroit 
+    //TODO : mettre au bon endroit quand on aura fait l'autre fonction pour les passes
+    /*
     var codeIR = reponseIA[2].map((elem) => elem.join("\n"));
     codeIR = codeIR.join("\n");
     PASSESJSON.unshift(codeIR);
     console.log(reponseIA);
+    */
 
   const DIFFPASSESJSON = [
       `
@@ -185,62 +187,64 @@ export default function App() {
     }, [currentPass]);
 
   useEffect(()=>{
-    var code = "";
-    var h = 150; //hue
-    var lesCouleursOutput = [];
-    var lesCouleursInput = [];
-    var tabNumLignesCodeIR = []; //représente la structure du code IR en blocs
-    var tabNumLignesCodeC = []; //représente la structure du code C en blocs de 1 ligne
-    var numLigneIR = 1;
-    var numLigneC = 1;
-    //création du bloc de code et de la liste des couleurs pour chaque ligne de l'outputEditor et de l'inputEditor
-    for (let bloc of reponseIA[2]){
-      const couleur = `hsla(${h} 65 65 / 40%)`;
-      tabNumLignesCodeIR.push([]); //on ajoute un bloc de code IR
-      tabNumLignesCodeC.push([numLigneC++]);
-      for(let ligne of bloc){
-        tabNumLignesCodeIR.at(-1).push(numLigneIR++); //on ajoute une ligne (représentée par son numéro) au bloc 
-        code+= ligne+"\n";
-        lesCouleursOutput.push("background: "+couleur);
+    if (Array.isArray(reponseIA)){
+      var code = "";
+      var h = 150; //hue
+      var lesCouleursOutput = [];
+      var lesCouleursInput = [];
+      var tabNumLignesCodeIR = []; //représente la structure du code IR en blocs
+      var tabNumLignesCodeC = []; //représente la structure du code C en blocs de 1 ligne
+      var numLigneIR = 1;
+      var numLigneC = 1;
+      //création du bloc de code et de la liste des couleurs pour chaque ligne de l'outputEditor et de l'inputEditor
+      for (let bloc of reponseIA[2]){
+        const couleur = `hsla(${h} 65 65 / 40%)`;
+        tabNumLignesCodeIR.push([]); //on ajoute un bloc de code IR
+        tabNumLignesCodeC.push([numLigneC++]);
+        for(let ligne of bloc){
+          tabNumLignesCodeIR.at(-1).push(numLigneIR++); //on ajoute une ligne (représentée par son numéro) au bloc 
+          code+= ligne+"\n";
+          lesCouleursOutput.push("background: "+couleur);
+        }
+        lesCouleursInput.push("background: "+couleur);
+        h = (h + 30) % 360;
       }
-      lesCouleursInput.push("background: "+couleur);
-      h = (h + 30) % 360;
-    }
-    code = code.slice(0,-2); //supprime le dernier \n
+      code = code.slice(0,-2); //supprime le dernier \n
 
-    outputRef.current.dispatch({
-      changes: {
-        from: 0,
-        to: outputRef.current.state.doc.length,
-        insert: code,
-      }
-    });
-    outputRef.current.dispatch({
-      effects: outputHighlighterCompartment.reconfigure(
-        createLineHoverHighlighter(
-          lesCouleursOutput, 
-          reponseIA[1], 
-          tabNumLignesCodeC,
-          tabNumLignesCodeIR, 
-          setExplications, 
-          'output', 
-          inputRef,
-          outputRef)
-      )
-    });
-    inputRef.current.dispatch({
-      effects: inputHighlighterCompartment.reconfigure(
-        createLineHoverHighlighter(
-          lesCouleursInput, 
-          reponseIA[1], 
-          tabNumLignesCodeC,
-          tabNumLignesCodeIR, 
-          setExplications, 
-          'input', 
-          inputRef,
-          outputRef)
-      )
-    });
+      outputRef.current.dispatch({
+        changes: {
+          from: 0,
+          to: outputRef.current.state.doc.length,
+          insert: code,
+        }
+      });
+      outputRef.current.dispatch({
+        effects: outputHighlighterCompartment.reconfigure(
+          createLineHoverHighlighter(
+            lesCouleursOutput, 
+            reponseIA[1], 
+            tabNumLignesCodeC,
+            tabNumLignesCodeIR, 
+            setExplications, 
+            'output', 
+            inputRef,
+            outputRef)
+        )
+      });
+      inputRef.current.dispatch({
+        effects: inputHighlighterCompartment.reconfigure(
+          createLineHoverHighlighter(
+            lesCouleursInput, 
+            reponseIA[1], 
+            tabNumLignesCodeC,
+            tabNumLignesCodeIR, 
+            setExplications, 
+            'input', 
+            inputRef,
+            outputRef)
+        )
+      });
+    }
   }, [reponseIA])
 
 
@@ -306,6 +310,8 @@ export default function App() {
   }
 
   const handleValidate = async() => {
+    
+
     
     try {
       const reponse = await fetch('/api/compile', {
