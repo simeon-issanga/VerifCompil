@@ -87,7 +87,8 @@ def compile_code():
         #  fichier IR
         with open(output_path, "r") as file_ll:
             llvm_ir = file_ll.read()
-        os.remove(output_path)
+        
+        
 
         #  Requête à l'IA
         prompt_sys = """Tu es un compilateur expert. 
@@ -101,19 +102,26 @@ def compile_code():
         Exceptions : Si une instruction du code C correspond à plusieurs instructions LLVM IR je veux une liste de listes pour l'élément de "liste_ll[i]"
         Les trois listes doivent avoir exactement la même taille. L'index 0 de liste_c correspond à l'index 0 de liste_ll et à l'index 0 de liste_explication.
         """
-        reponse = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": prompt_sys},
-                {"role": "user", "content": f"Voici le code C :\n{code_c}\nVoici le code LLVM IR :\n{llvm_ir}"}
-            ],
-            temperature=0.2,
-            #max_tokens=2000,
-            response_format={"type": "json_object"}
-        )
-        
-        # JSON pour transmettr les données
-        donnees_ia = json.loads(reponse.choices[0].message.content)
+        if os.environ.get("API_KEY_DEEPSEEK") == "fake_key_for_ci":
+            donnees_ia = {
+                "liste_c": ["/* Mode Test */"],
+                "liste_ll": ["; IR généré"],
+                "liste_explication": ["Test réussi sans IA"]
+            }
+        else :
+            reponse = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[
+                    {"role": "system", "content": prompt_sys},
+                    {"role": "user", "content": f"Voici le code C :\n{code_c}\nVoici le code LLVM IR :\n{llvm_ir}"}
+                ],
+                temperature=0.2,
+                #max_tokens=2000,
+                response_format={"type": "json_object"}
+            )
+            
+            # JSON pour transmettr les données
+            donnees_ia = json.loads(reponse.choices[0].message.content)
         
         return jsonify({
             "status": "success", 
