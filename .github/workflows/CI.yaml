@@ -66,6 +66,14 @@ jobs:
           cd site
           npm install
           npm run build
+      - name: Afficher les logs en cas d'échec
+        if: failure() # S'exécute SEULEMENT si une étape précédente a raté
+        run: |
+          docker compose ps
+          docker compose logs web
+          docker compose logs pythonserver
+          docker compose logs nginx-proxy
+
 
       - name: Resultat
         run: echo "CI terminée"
