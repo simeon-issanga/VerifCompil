@@ -18,34 +18,60 @@ client = OpenAI(
 def transformer_en_liste(dossier_path):
     la_liste = []
     dossier = Path(dossier_path)
+    
     if not dossier.exists():
         return la_liste
     
-    for fichier in sorted(dossier.glob("*.ll")):
+    for fichier in sorted(dossier.glob("*")):
         with open(fichier, 'r', encoding='utf-8') as f:
             la_liste.append(f.read())
     return la_liste
 
+def difference_entre_passes(file1, file2):
+    commande_diff = ["diff", "-u", file1, file2]
+
+    try:
+        result = subprocess.run(commande_diff, capture_output=True, text=True)
+        return result.stdout 
+    except Exception as e:
+        return f"Erreur diff : {str(e)}"
+
+
 def avoir_passe(file_c, uid):
+    vieuxFichiers = None
     pass_dir = f"passes_{uid}"
+    diff_dir = f"diffs_{uid}"
     os.makedirs(pass_dir, exist_ok=True)
-    
+    os.makedirs(diff_dir, exist_ok=True)
+
     commande_clang = ["clang", "-mllvm", "-print-after-all", file_c, "-c", "-o", "/dev/null"]
     
     try:
         res = subprocess.run(commande_clang, capture_output=True, text=True, timeout=15)
         output_passes = res.stderr
 
+        vieuxFichiers = None
+
         segments = output_passes.split("*** IR Dump After")
+        
         for i, segment in enumerate(segments[1:], 1):
-            pass_file = os.path.join(pass_dir, f"pass_{i:02d}.ll")
+            file_name = f"pass_{i:02d}.ll"
+            pass_file = os.path.join(pass_dir, file_name)
+
             with open(pass_file, "w") as f:
                 f.write("*** IR Dump After" + segment)
 
-        return transformer_en_liste(pass_dir), pass_dir
+            if vieuxFichiers is not None:
+                diff_file = difference_entre_passes(vieuxFichiers, pass_file)    
+                chemFich = os.path.join(diff_dir, f"diff_{i:02d}.txt")
+                with open(chemFich, "w") as f_diff:
+                    f_diff.write(diff_file)
+
+            vieuxFichiers = file_name
+        return [transformer_en_liste(pass_dir), transformer_en_liste(diff_dir), pass_dir, diff_dir]
                
     except Exception as e:
-        return [f"Erreur passes : {str(e)}"], None
+        return [[f"Erreur passes : {str(e)}"], [], None, None]
     finally:       
         if os.path.exists(pass_dir):
             for f in Path(pass_dir).glob("*.ll"):
@@ -60,6 +86,7 @@ def compile_code():
     file_path = f"temp_{uid}.c"
     output_path = f"temp_{uid}.ll"
     liste_passes = []
+    liste_diffs = []
     try:
         donnes = request.get_json()
         code_c = donnes.get('code', '')
@@ -71,7 +98,11 @@ def compile_code():
         file_path = "fichier.c"
         with open(file_path, "w") as file:
             file.write(code_c)
-        liste_passes, pass_dir = avoir_passe(file_path, uid)
+
+        result_fct = avoir_passe(file_path, uid)
+        liste_passes = result_fct[0]
+        liste_diffs = result_fct[1]
+
         commande_bash = ["clang", file_path, "-emit-llvm", "-S", "-c", "-o", output_path]
         resultat_terminal = subprocess.run(commande_bash, capture_output=True, text=True, timeout=15)
 
@@ -106,7 +137,9 @@ def compile_code():
             donnees_ia = {
                 "liste_c": ["/* Mode Test */"],
                 "liste_ll": ["; IR généré"],
-                "liste_explication": ["Test réussi sans IA"]
+                "liste_explication": ["Test réussi sans IA"],
+                "liste_passes": ["passes"],
+                "liste_diffs": ["diff"]
             }
         else :
             reponse = client.chat.completions.create(
@@ -128,7 +161,8 @@ def compile_code():
             "liste_c": donnees_ia.get("liste_c", []),
             "liste_ll": donnees_ia.get("liste_ll", []),
             "liste_explication": donnees_ia.get("liste_explication", []),
-            "liste_passes": liste_passes
+            "liste_passes": liste_passes,
+            "liste_diffs": liste_diffs
         })
 
     except Exception as e:
@@ -141,24 +175,6 @@ def compile_code():
         if os.path.exists(file_path): os.remove(file_path)
         if os.path.exists(output_path): os.remove(output_path)
 
-
-#def avoir_passe(file_c):
-#    commande_bash1 = ["clang",  "-mllvm", "-print-after-all", file_c ,"-c", "-o", "/dev/null", "2>", "passes.txt"]
-#    commande_bash2 = ["awk", '/\*\*\* IR Dump After/{filename=sprintf("passes/pass_db_%02d.ll", ++count)} {if(filename) print > filename}', "passes.txt"]
-#    try :
-#        resultat_terminal1 = subprocess.run(commande_bash1, capture_output=True)
-#        if resultat_terminal1.returncode != 0:
-#            return (f"Erreur lors de l'exécution de la commande bash 1 :\n{resultat_terminal1.stderr.decode()}")
-#        else :
-#            resultat_terminal2 = subprocess.run(commande_bash2, capture_output=True)
-#            if resultat_terminal2.returncode != 0:
-#                return (f"Erreur lors de l'exécution de la commande bash 2 :\n{resultat_terminal2.stderr.decode()}")
-#
-#            return transformer_en_liste("passes")
-#               
-#    except Exception as e:
-#        return (f"Erreur fonction   avoir_passe : {str(e)}")
-        
 
 
 if __name__ == '__main__':
