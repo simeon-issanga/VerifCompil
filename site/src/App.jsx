@@ -323,11 +323,7 @@ export default function App() {
       try {
         const donnees = JSON.parse(texteBrut)
         if (donnees.status === 'success') {
-          let result = JSON.stringify(donnees, null, 3);
-          console.log(result);
-          console.log(donnees);
-          console.log(donnees["liste_c"]);
-          setReponseIA([result["liste_c"], result["liste_explication"],result["liste_ll"]]);
+          setReponseIA([donnees["liste_c"], donnees["liste_explication"],donnees["liste_ll"]]);
         } else {
           setReponseIA("Erreur du serveur : " + donnees.message);
         }
