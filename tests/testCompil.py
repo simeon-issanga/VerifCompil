@@ -23,7 +23,12 @@ def testCompile():
         print("TEST reussi")
         
     except Exception as e:
-        print(f"test rate : {str(e)}")
+        print(f"échec test compil")
+        if 'response' in locals():
+            print(f"Status Code: {response.status_code}")
+            print(f"Réponse du serveur: {response.text}")
+        else:
+            print(f"Erreur de connexion : {str(e)}")
         exit(1)
 
 if __name__ == "__main__":
