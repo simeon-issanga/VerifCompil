@@ -21,6 +21,7 @@ def testCompile():
         assert len(data["liste_passes"]) > 0
         
         print("TEST reussi")
+        print("test1")
         
     except Exception as e:
         print(f"échec test compil")
