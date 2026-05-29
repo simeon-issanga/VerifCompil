@@ -93,10 +93,12 @@ export default function App() {
     `
     ];
 
+    console.log(reponseIA);
     //TODO : mettre au bon endroit 
     var codeIR = reponseIA[2].map((elem) => elem.join("\n"));
     codeIR = codeIR.join("\n");
     PASSESJSON.unshift(codeIR);
+    console.log(reponseIA);
 
   const DIFFPASSESJSON = [
       `
