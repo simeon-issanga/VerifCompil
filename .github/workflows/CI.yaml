@@ -30,7 +30,7 @@ jobs:
       - name: Vérification syntaxe Backend
         run: |
           cd serveurPython
-          python3 -m py_compile app.py 
+          python3 -m compile_code app.py 
           - name: Afficher les logs en cas d'échec
           
             if: failure() # Ne s'exécute que si le test au-dessus a raté à supp
