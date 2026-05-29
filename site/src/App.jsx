@@ -325,6 +325,7 @@ export default function App() {
         if (donnees.status === 'success') {
           let result = JSON.stringify(donnees, null, 3);
           console.log(result);
+          console.log(result["liste_c"]);
           setReponseIA([result["liste_c"], result["liste_explication"],result["liste_ll"]]);
         } else {
           setReponseIA("Erreur du serveur : " + donnees.message);
