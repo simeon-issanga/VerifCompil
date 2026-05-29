@@ -27,18 +27,6 @@ Ce projet a été réalisé durant notre stage en Espagne. Il s'agit d'un site i
 
 * 🐳 Full Dockerized : Déploiement simplifié via Docker Compose.
 
-## Architecture du Projet
-```
-VerifCompil/
-├── site/                # Frontend React (Vite, CodeMirror)
-├── serveurPython/       # Backend Flask (Clang, Python, OpenAI API)
-├── config/
-│   ├── nginx/           # Configuration du Reverse Proxy Nginx
-│   └── env/             # Variables d'environnement (.env)
-├── tests/               # Batterie de tests (Unitaires & Intégration)
-└── docker-compose.yml   # Orchestration des conteneurs
-```
-
 
 ## Installation et Lancement
 
