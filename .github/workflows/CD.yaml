@@ -1,23 +1,18 @@
-name: CD Pipeline
-
+name: CD-Pipeline
+# version pour avoir une pipeline
 on:
-  push:
+  workflow_run:
+    workflows: ["CI-VerifCompil"] 
+    types:
+      - completed
     branches: [main]
 
 jobs:
-  test:
-    name: Lancement Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Check Python Syntax
-        run: python3 -m py_compile serveurPython/app.py
-
   deploy:
     name: Deploiement serveur
-    needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: self-hosted  # Ta machine Socarrat
+    # si CI ok alors 
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: self-hosted 
     steps:
       - name: Verification code
         uses: actions/checkout@v4
@@ -33,14 +28,21 @@ jobs:
         with:
           filters: |
             python:
-              - 'serveurPython/**' # Surveille tout le dossier Python
+              - 'serveurPython/**'
+            site:
+              - 'site/**'
+            nginx:
+              - 'config/nginx/**'
 
-      - name: Relancer uniquement Python si changement
+      - name: recompose Python
         if: steps.changes.outputs.python == 'true'
         run: | 
           docker compose up --build -d pythonserver 
 
-      - name: Relancer tout (Frontend/Nginx) si pas de changement Python
-        if: steps.changes.outputs.python == 'false'
+      - name: recompose les services web
+        if: steps.changes.outputs.site == 'true' || steps.changes.outputs.nginx == 'true'
         run: |
-          docker compose restart web
+          docker compose up --build -d web nginx-proxy
+
+      - name: Nettoyage des vieilles images
+        run: docker image prune -f
