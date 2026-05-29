@@ -11,25 +11,50 @@ jobs:
     runs-on: ubuntu-latest   
 
     steps:                      
-      
       - name: Recup fichier
-        uses: actions/checkout@v4 # télécharge fichiers
+        uses: actions/checkout@v4
 
-      - name: Test de la fonction de compilation
+      - name: Configurer Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Installer les dependances Python
+        run: |
+          pip install requests flask openai 
+      - name: Test de la fonction de compilation (Clang)
         run: |
           sudo apt-get install -y clang
           python3 tests/test_compilation.py
 
-      - name: Fonction B 
+      - name: Vérification syntaxe Backend
         run: |
           cd serveurPython
           python3 -m py_compile app.py 
+      
+      - name: Préparer faux .env 
+        # pour que Docker Compose pas d'erreur
+        run: |
+          mkdir -p config/env
+          echo "API_KEY_DEEPSEEK=fake_key_for_ci" > config/env/.env
 
-      - name: Front
+      - name: Lancer les conteneurs pour test
+        run: docker compose up -d
+
+      - name: Attendre que le serveur soit prêt
+        run: sleep 15 # docker pret
+
+      - name: tests des fonctions back
+        run: python3 tests/testCompil.py
+
+      - name: Arrêter les conteneurs
+        run: docker compose down
+
+      - name: Build Frontend (React)
         run: |
           cd site
-          npm install                  # Installe les paquets
-          npm run build                # Tente de construire le site (le build)
+          npm install
+          npm run build
 
       - name: Resultat
-        run: echo "CI ok"
+        run: echo " CI terminée"
