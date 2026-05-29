@@ -25,7 +25,8 @@ services:
       - config/env/.env
     environment:
       - PYTHONUNBUFFERED=1
-      
+    ports:
+      - '5000:5000'
     networks:
       - verif_compil
 

@@ -1,8 +1,10 @@
+import os
 import requests
 import time
 
 def testCompile():
-    url = "http://localhost:5000/api/compile"
+    server_url = os.getenv("TEST_SERVER_URL", "http://localhost:8080")
+    url = f"{server_url}/api/compile"
     payload = {
         "code": "int main() { int a = 1; return a; }"
     }
