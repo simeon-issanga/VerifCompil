@@ -22,25 +22,20 @@ jobs:
       - name: Installer les dependances Python
         run: |
           pip install requests flask openai 
+
       - name: Test de la fonction de compilation (Clang)
         run: |
           sudo apt-get install -y clang
+          # Assure-toi que ce fichier existe dans /tests/
           python3 tests/testClang.py
 
       - name: Vérification syntaxe Backend
         run: |
           cd serveurPython
-          python3 -m compile_code app.py 
-          - name: Afficher les logs en cas d'échec
-          
-            if: failure() # Ne s'exécute que si le test au-dessus a raté à supp
-            run: |
-              docker compose ps
-              docker compose logs pythonserver
-              docker compose logs nginx-proxy
-      
+          # Correction : le module est 'py_compile', pas 'compile_code'
+          python3 -m py_compile app.py 
+
       - name: Préparer faux .env 
-        # pour que Docker Compose pas d'erreur
         run: |
           mkdir -p config/env
           echo "API_KEY_DEEPSEEK=fake_key_for_ci" > config/env/.env
@@ -49,12 +44,19 @@ jobs:
         run: docker compose up -d
 
       - name: Attendre que le serveur soit prêt
-        run: sleep 15 # docker pret
+        run: sleep 20 # On augmente un peu pour être sûr
 
       - name: tests des fonctions back
         run: python3 tests/testCompil.py
         env:
           TEST_SERVER_URL: http://localhost:8080
+
+      - name: Afficher les logs en cas d'échec
+        if: failure() # S'exécute SEULEMENT si une étape précédente a raté
+        run: |
+          docker compose ps
+          docker compose logs pythonserver
+          docker compose logs nginx-proxy
 
       - name: Arrêter les conteneurs
         run: docker compose down
@@ -66,4 +68,4 @@ jobs:
           npm run build
 
       - name: Resultat
-        run: echo " CI terminée"
+        run: echo "CI terminée"
