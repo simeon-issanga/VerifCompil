@@ -92,14 +92,11 @@ export default function App() {
     }
     `
     ];
-
-    console.log(reponseIA);
     //TODO : mettre au bon endroit quand on aura fait l'autre fonction pour les passes
     /*
     var codeIR = reponseIA[2].map((elem) => elem.join("\n"));
     codeIR = codeIR.join("\n");
     PASSESJSON.unshift(codeIR);
-    console.log(reponseIA);
     */
 
   const DIFFPASSESJSON = [
@@ -187,6 +184,7 @@ export default function App() {
     }, [currentPass]);
 
   useEffect(()=>{
+    console.log(reponseIA);
     if (Array.isArray(reponseIA)){
       var code = "";
       var h = 150; //hue
