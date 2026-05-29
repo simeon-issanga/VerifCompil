@@ -25,7 +25,7 @@ jobs:
       - name: Test de la fonction de compilation (Clang)
         run: |
           sudo apt-get install -y clang
-          python3 tests/test_compilation.py
+          python3 tests/testClang.py
 
       - name: Vérification syntaxe Backend
         run: |
