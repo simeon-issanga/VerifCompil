@@ -258,6 +258,7 @@ export default function App() {
         
       try {
         const donnees = JSON.parse(texteBrut)
+        console.log(donnees);//TODO : retirer
         if (donnees.status === 'success') {
           setReponseIA([donnees["liste_c"], donnees["liste_explication"],donnees["liste_ll"]]);
         } else {
