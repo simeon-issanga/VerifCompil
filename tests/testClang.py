@@ -8,7 +8,7 @@ def test_clang_works():
     result = subprocess.run(["clang", "test.c", "-emit-llvm", "-S", "-o", "test.ll"])
     assert result.returncode == 0
     print("Test Clang : OK")
-    print("test")
+    
 
 if __name__ == "__main__":
     test_clang_works()
