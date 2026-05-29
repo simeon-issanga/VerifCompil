@@ -11,7 +11,7 @@ Ce projet a été réalisé durant notre stage en Espagne. Il s'agit d'un site i
 
 ![Py](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)
 
-![JS](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black))
+![JS](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black)
 
 ![LLVM](https://img.shields.io/badge/LLVM-100000?style=for-the-badge&logo=llvm&logoColor=white)
 
