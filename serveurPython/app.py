@@ -67,7 +67,7 @@ def avoir_passe(file_c, uid):
                 with open(chemFich, "w") as f_diff:
                     f_diff.write(diff_file)
 
-            vieuxFichiers = file_name
+            vieuxFichiers = pass_file
         return [transformer_en_liste(pass_dir), transformer_en_liste(diff_dir), pass_dir, diff_dir]
                
     except Exception as e:
