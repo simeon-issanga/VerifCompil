@@ -46,6 +46,8 @@ jobs:
 
       - name: tests des fonctions back
         run: python3 tests/testCompil.py
+        env:
+          TEST_SERVER_URL: http://localhost:8080
 
       - name: Arrêter les conteneurs
         run: docker compose down
