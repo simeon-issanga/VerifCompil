@@ -25,8 +25,6 @@ export default function App() {
   const nextPass = useRef(null);
 
 
-
-  const [codeC, setCodeC] = useState('') //TODO :simplifie la récupération du code entré TODO -> remplacer par une variable normale
   const [reponseIA,setReponseIA] = useState([["int main() {","printf(\"Hello, world!\\n\");","return 0;"],["Cette ligne déclare la fonction main et alloue de la mémoire pour une variable entière. La valeur 0 est stockée dans cette variable.","Cette ligne appelle la fonction printf pour afficher le message \"Hello, world!\\n\". La fonction printf est déclarée plus loin dans le code.","Cette ligne retourne la valeur 0 pour indiquer que le programme s'est terminé avec succès."], [["%1 = alloca i32, align 4","store i32 0, ptr %1, align 4"],["%2 = call i32 (ptr, ...) @printf(ptr noundef @.str)"],["ret i32 0"]]])
   const [explications, setExplications] = useState('');
 
@@ -94,6 +92,12 @@ export default function App() {
     }
     `
     ];
+
+    //TODO : mettre au bon endroit 
+    var codeIR = reponseIA[2].map((elem) => elem.join("\n"));
+    codeIR = codeIR.join("\n");
+    PASSESJSON.unshift(codeIR);
+
   const DIFFPASSESJSON = [
       `
       --- passes/pass_db_01.ll        2026-05-28 15:17:37
@@ -178,8 +182,67 @@ export default function App() {
       });
     }, [currentPass]);
 
+  useEffect(()=>{
+    var code = "";
+    var h = 150; //hue
+    var lesCouleursOutput = [];
+    var lesCouleursInput = [];
+    var tabNumLignesCodeIR = []; //représente la structure du code IR en blocs
+    var tabNumLignesCodeC = []; //représente la structure du code C en blocs de 1 ligne
+    var numLigneIR = 1;
+    var numLigneC = 1;
+    //création du bloc de code et de la liste des couleurs pour chaque ligne de l'outputEditor et de l'inputEditor
+    for (let bloc of reponseIA[2]){
+      const couleur = `hsla(${h} 65 65 / 40%)`;
+      tabNumLignesCodeIR.push([]); //on ajoute un bloc de code IR
+      tabNumLignesCodeC.push([numLigneC++]);
+      for(let ligne of bloc){
+        tabNumLignesCodeIR.at(-1).push(numLigneIR++); //on ajoute une ligne (représentée par son numéro) au bloc 
+        code+= ligne+"\n";
+        lesCouleursOutput.push("background: "+couleur);
+      }
+      lesCouleursInput.push("background: "+couleur);
+      h = (h + 30) % 360;
+    }
+    code = code.slice(0,-2); //supprime le dernier \n
+
+    outputRef.current.dispatch({
+      changes: {
+        from: 0,
+        to: outputRef.current.state.doc.length,
+        insert: code,
+      }
+    });
+    outputRef.current.dispatch({
+      effects: outputHighlighterCompartment.reconfigure(
+        createLineHoverHighlighter(
+          lesCouleursOutput, 
+          reponseIA[1], 
+          tabNumLignesCodeC,
+          tabNumLignesCodeIR, 
+          setExplications, 
+          'output', 
+          inputRef,
+          outputRef)
+      )
+    });
+    inputRef.current.dispatch({
+      effects: inputHighlighterCompartment.reconfigure(
+        createLineHoverHighlighter(
+          lesCouleursInput, 
+          reponseIA[1], 
+          tabNumLignesCodeC,
+          tabNumLignesCodeIR, 
+          setExplications, 
+          'input', 
+          inputRef,
+          outputRef)
+      )
+    });
+  }, [reponseIA])
+
+
   function handleTemp(){
-    const codeC = inputRef.current.state.doc.toString()
 
     var code = "";
     var h = 150; //hue
@@ -240,6 +303,38 @@ export default function App() {
     })
   }
 
+  const handleValidate = async() => {
+    
+    try {
+      const reponse = await fetch('/api/compile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: inputRef.current.state.doc.toString() })
+      })
+
+      const texteBrut = await reponse.text()
+        
+      try {
+        const donnees = JSON.parse(texteBrut)
+        if (donnees.status === 'success') {
+          let result = JSON.stringify(donnees, null, 3);
+          setReponseIA([result["liste_c"], result["liste_explication"],result["liste_ll"]]);
+        } else {
+          setReponseIA("Erreur du serveur : " + donnees.message);
+        }
+      } catch (erreurParse) {
+        // 4. Si la transformation plante (ce n'est pas du JSON), on affiche l'erreur brute
+        setReponseIA("Erreur inattendue (Nginx ou plantage Flask) :\n\n" + texteBrut)
+      }
+    }catch (error) {
+      setReponseIA('Erreur de réseau ou serveur injoignable : ' + error.message)
+    }
+  }
+
+
+
+
+
   function handleNavigation(direction){
     setCurrentPass(direction === "next" ? (currentPass == PASSESJSON.length-2 ? PASSESJSON.length-2 : currentPass+1 ) : (currentPass == 0 ? 0 : currentPass-1));
     
@@ -291,26 +386,26 @@ export default function App() {
         />
       </div>
       <div>
-        <button className="btnValider" onClick={handleTemp}>Valider</button>
+        <button className="btnValider" onClick={handleValidate}>Valider</button> //TODO :HandleValidate
       </div>
       
       <div className="explications">{explications}</div>
       
       <div className="flex-container">
         <button className="btnNavigation" onClick={() => handleNavigation("previous")}>previous</button>
-        <div><h2>passes {`${currentPass+1} - ${currentPass+2} / ${PASSESJSON.length} : """ `}</h2></div>
+        <div><h2>pass {`${currentPass+1} / ${PASSESJSON.length-1} : """ `}</h2></div>
         <button className="btnNavigation" onClick={() => handleNavigation("next")}>next</button>
       </div>
       <div className="flex-container">
         <Editor
           editorRef={previousPass}
           extensions={passesExtensions}
-          langage={`pass n° ${currentPass+1}`}
+          langage={`code version n° ${currentPass+1}`}
         />
         <Editor
           editorRef={nextPass}
           extensions={passesExtensions}
-          langage={`pass n° ${currentPass+2}`}
+          langage={`code version n° ${currentPass+2}`}
         />
       </div>
 
