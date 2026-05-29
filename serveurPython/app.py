@@ -43,9 +43,9 @@ def compile_code():
             })
 
         #  fichier IR
-        with open("result_file.ll", "r") as file_ll:
+        with open(output_path, "r") as file_ll:
             llvm_ir = file_ll.read()
-        os.remove("result_file.ll")
+        os.remove(output_path)
 
         #  Requête à l'IA
         prompt_sys = """Tu es un compilateur expert. 
