@@ -9,7 +9,9 @@ Ce projet a été réalisé durant notre stage en Espagne. Il s'agit d'un site i
 
 ![alt text](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 
-![alt text](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white)
+![alt text](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)
+
+![alt text](![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black))
 
 ![alt text](https://img.shields.io/badge/LLVM-100000?style=for-the-badge&logo=llvm&logoColor=white)
 
