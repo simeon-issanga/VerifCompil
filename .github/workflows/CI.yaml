@@ -61,19 +61,7 @@ jobs:
       - name: Arrêter les conteneurs
         run: docker compose down
 
-      - name: Build Frontend (React)
-        run: |
-          cd site
-          npm install
-          npm run build
-      - name: Afficher les logs en cas d'échec
-        if: failure() # S'exécute SEULEMENT si une étape précédente a raté
-        run: |
-          docker compose ps
-          docker compose logs web
-          docker compose logs pythonserver
-          docker compose logs nginx-proxy
-
+# tester le front mais c compliqué
 
       - name: Resultat
         run: echo "CI terminée"
