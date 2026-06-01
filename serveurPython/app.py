@@ -124,7 +124,7 @@ def compile_code():
         #  Requête à l'IA
         prompt_sys = """Tu es un compilateur expert. 
         Ton objectif est de faire correspondre les lignes de code C avec les blocs LLVM IR correspondants.
-        Tu dois renvoyer uniquement un objet JSON valide avec cette structure exacte :
+        Tu dois renvoyer uniquement un objet JSON valide avec cette structure exacte, sépare bien les éléments expliquant la configuration et explique les tout le .ll doit être expliqué:
         {
             "liste_c": ["fichier.c","","","int a = 5;", "return 0;"],
             "liste_ll": ["source_filename = "fichier.c"","target datalayout = 'e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-n32:64-S128-Fn32'", "target triple = 'arm64-apple-macosx26.0.0'","%1 = alloca i32\\nstore i32 5, i32* %1", "ret i32 0","declare i32 @printf(ptr noundef, ...) #1"],
