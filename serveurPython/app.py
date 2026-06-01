@@ -126,9 +126,9 @@ def compile_code():
         Ton objectif est de faire correspondre les lignes de code C avec les blocs LLVM IR correspondants.
         Tu dois renvoyer uniquement un objet JSON valide avec cette structure exacte :
         {
-            "liste_c": ["int a = 5;", "return 0;"],
-            "liste_ll": ["%1 = alloca i32\\nstore i32 5, i32* %1", "ret i32 0"],
-            "liste_explication": ["Cette ligne alloue de la mémoire pour une variable entière et stocke la valeur 5 dedans.", "Cette ligne retourne la valeur 0 pour indiquer que le programme s'est terminé avec succès."]
+            "liste_c": ["","","int a = 5;", "return 0;"],
+            "liste_ll": [" target datalayout = 'e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-n32:64-S128-Fn32'", "target triple = 'arm64-apple-macosx26.0.0'","%1 = alloca i32\\nstore i32 5, i32* %1", "ret i32 0"],
+            "liste_explication": ["le e signifie ... et ...", "est destiné à ...","Cette ligne alloue de la mémoire pour une variable entière et stocke la valeur 5 dedans.", "Cette ligne retourne la valeur 0 pour indiquer que le programme s'est terminé avec succès."]
         }
         Exceptions : Si une instruction du code C correspond à plusieurs instructions LLVM IR je veux une liste de listes pour l'élément de "liste_ll[i]"
         Les trois listes doivent avoir exactement la même taille. L'index 0 de liste_c correspond à l'index 0 de liste_ll et à l'index 0 de liste_explication.
