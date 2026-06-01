@@ -128,7 +128,7 @@ def compile_code():
         Tu dois renvoyer uniquement un objet JSON valide avec cette structure exacte, sépare bien les éléments expliquant la configuration du compilateur dans les listes:
         {
             "liste_c": ["fichier.c","","","int a = 5;", "return 0;"],
-            "liste_ll": ["source_filename = 'fichier.c'","target datalayout = 'e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-n32:64-S128-Fn32'", "target triple = 'arm64-apple-macosx26.0.0'","%1 = alloca i32\\nstore i32 5, i32* %1", "ret i32 0","declare i32 @printf(ptr noundef, ...) #1"],
+            "liste_ll": [["source_filename = 'fichier.c'"],["target datalayout = 'e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-n32:64-S128-Fn32'"], ["target triple = 'arm64-apple-macosx26.0.0'"],["%1 = alloca i32\\nstore i32 5, i32* %1"], ["ret i32 0"],["declare i32 @printf(ptr noundef, ...) #1"]],
             "liste_explication": ["correspond au nom de fichier","e indique une représentation little-endian m:o utilise le format Mach-O  p270:32:32 et p271:32:32 définissent que les pointeurs situés dans les espaces d'adressage spécifiques 270 et 271 ont une taille de 32 bits pour un alignement ABI de 32 bits,  p272:64:64 applique une taille et un alignement de 64 bits pour les pointeurs de l'espace 272 ;  i64:64 et i128:128 imposent respectivement un alignement strict de 64 bits pour les entiers de 64 bits et de 128 bits pour les entiers de 128 bits, n32:64 informe le compilateur que le processeur cible gère de façon native les largeurs d'entiers de 32 et 64 bits, S128 garantit que l'alignement naturel de la pile d'exécution s'effectue sur des blocs de 128 bits, et enfin, Fn3２ exige que l'alignement des pointeurs de fonction soit un multiple de 3２ bits.", "machine cible du programme","Cette ligne alloue de la mémoire pour une variable entière et stocke la valeur 5 dedans.", "Cette ligne retourne la valeur 0 pour indiquer que le programme s'est terminé avec succès.","indiquant qu'elle retourne un entier de 32 bits (i32) et est identifiée par @printf"]
         }
         Exceptions : Si une instruction du code C correspond à plusieurs instructions LLVM IR je veux une liste de listes pour l'élément de "liste_ll[i]"
@@ -139,7 +139,7 @@ def compile_code():
         if os.environ.get("API_KEY_DEEPSEEK") == "fake_key_for_ci":
             donnees_ia = {
                 "liste_c": ["/* Mode Test */"],
-                "liste_ll": ["; IR généré"],
+                "liste_ll": [["; IR généré"]],
                 "liste_explication": ["Test réussi sans IA"],
                 "liste_passes": ["passes"],
                 "liste_diffs": ["diff"]
