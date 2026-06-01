@@ -122,16 +122,45 @@ def compile_code():
         
 
         #  Requête à l'IA
-        prompt_sys = """Tu es un compilateur expert. 
-        Ton objectif est de faire correspondre les lignes de code C avec les blocs LLVM IR correspondants.
-        Tu dois renvoyer uniquement un objet JSON valide avec cette structure exacte, sépare bien les éléments expliquant la configuration et explique les tout le .ll doit être expliqué:
-        {
-            "liste_c": ["fichier.c","","","int a = 5;", "return 0;"],
-            "liste_ll": ["source_filename = "fichier.c"","target datalayout = 'e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-n32:64-S128-Fn32'", "target triple = 'arm64-apple-macosx26.0.0'","%1 = alloca i32\\nstore i32 5, i32* %1", "ret i32 0","declare i32 @printf(ptr noundef, ...) #1"],
-            "liste_explication": ["correspond au nom de fichier","La chaîne target datalayout configure la manière dont le compilateur LLVM organise les types en mémoire pour une architecture cible spécifique : e indique une représentation little-endian (où l'octet de poids faible est stocké en premier), m:o spécifie que la décoration des symboles (mangling) utilise le format Mach-O (typique des systèmes d'exploitation Apple), p270:32:32 et p271:32:32 définissent que les pointeurs situés dans les espaces d'adressage spécifiques 270 et 271 ont une taille de 32 bits pour un alignement ABI de 32 bits, tandis que p272:64:64 applique une taille et un alignement de 64 bits pour les pointeurs de l'espace 272 ; par ailleurs, i64:64 et i128:128 imposent respectivement un alignement strict de 64 bits pour les entiers de 64 bits et de 128 bits pour les entiers de 128 bits, n32:64 informe le compilateur que le processeur cible gère de façon native les largeurs d'entiers de 32 et 64 bits, S128 garantit que l'alignement naturel de la pile d'exécution s'effectue sur des blocs de 128 bits, et enfin, Fn3２ exige que l'alignement des pointeurs de fonction soit un multiple de 3２ bits.", "machine cible du programme","Cette ligne alloue de la mémoire pour une variable entière et stocke la valeur 5 dedans.", "Cette ligne retourne la valeur 0 pour indiquer que le programme s'est terminé avec succès.","indiquant qu'elle retourne un entier de 32 bits (i32) et est identifiée globalement par @printf"]
-        }
-        Exceptions : Si une instruction du code C correspond à plusieurs instructions LLVM IR je veux une liste de listes pour l'élément de "liste_ll[i]"
-        Les trois listes doivent avoir exactement la même taille. L'index 0 de liste_c correspond à l'index 0 de liste_ll et à l'index 0 de liste_explication.
+        prompt_sys = """
+        Tu es un compilateur expert spécialisé en C et LLVM IR. 
+        Ton objectif est de mettre en correspondance les instructions d'un code source C avec leurs blocs LLVM IR respectifs, et de fournir une explication technique pour chaque élément.
+
+        RÈGLES STRICTES DE GÉNÉRATION :
+        1. Tu dois renvoyer UNIQUEMENT un objet JSON valide. N'ajoute aucun texte d'introduction, aucune conclusion, et n'utilise pas de blocs de code Markdown (```json).
+        2. Tout le code `.ll` fourni doit être intégralement expliqué et mappé. Rien ne doit être ignoré.
+        3. Les trois listes ("liste_c", "liste_ll", "liste_explication") doivent IMPÉRATIVEMENT avoir exactement la même longueur. L'index [i] de chaque liste correspond au même bloc logique.
+        4. Pour les métadonnées ou la configuration LLVM (ex: target datalayout, source_filename, declare) qui n'ont pas d'équivalent direct dans le code C, utilise une chaîne vide "" dans "liste_c".
+        5. Si une seule ligne de code C correspond à plusieurs instructions LLVM IR, regroupe ces instructions LLVM dans une seule et même chaîne de caractères en les séparant par des sauts de ligne (\n) dans "liste_ll". Ne crée pas de listes imbriquées.
+
+STRUCTURE JSON ATTENDUE :
+{
+  "liste_c": [
+    "fichier.c",
+    "",
+    "",
+    "int a = 5;",
+    "return 0;",
+    ""
+  ],
+  "liste_ll": [
+    "source_filename = 'fichier.c'",
+    "target datalayout = 'e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-n32:64-S128-Fn32'",
+    "target triple = 'arm64-apple-macosx26.0.0'",
+    "%1 = alloca i32\nstore i32 5, i32* %1",
+    "ret i32 0",
+    "declare i32 @printf(ptr noundef, ...) #1"
+  ],
+  "liste_explication": [
+    "Indique le nom du fichier source d'origine.",
+    "e: little-endian. m:o: format Mach-O. p270...: tailles/alignements des pointeurs selon l'espace d'adressage. i64/i128: alignement strict des entiers. n32:64: support natif 32/64 bits. S128: alignement de la pile sur 128 bits. Fn32: alignement des pointeurs de fonction sur 32 bits.",
+    "Spécifie l'architecture et le système cible du programme.",
+    "Alloue de la mémoire sur la pile pour une variable entière 32 bits et y stocke la valeur 5.",
+    "Retourne la valeur 0, indiquant que la fonction s'est terminée avec succès.",
+    "Déclare le prototype d'une fonction externe (printf) retournant un i32, acceptant un pointeur valide (noundef) et des arguments variadiques (...)."
+  ]
+}
+
         """
         if os.environ.get("API_KEY_DEEPSEEK") == "fake_key_for_ci":
             donnees_ia = {
