@@ -87,6 +87,9 @@ export function createLineHoverHighlighter(lesCouleurs, lesExplications,tabNumLi
             view.dispatch({})
         }
 
+
+
+
         build(view) { //Calcule et retourne un RangeSet — la liste de toutes les décorations à appliquer.
             const builder = new RangeSetBuilder()
             for (const { from, to } of view.visibleRanges) {
@@ -108,11 +111,112 @@ export function createLineHoverHighlighter(lesCouleurs, lesExplications,tabNumLi
             }
             return builder.finish() //retourne le RangeSet final
         }
+
+
     }, 
     { decorations: v => v.decorations })
 
     pluginRefs.set(editorKey, plugin)  // clé unique par éditeur
     return plugin
+}
+
+export function createLineDiffHiglighter(editorKey, passDiff){
+    const plugin = ViewPlugin.fromClass( //méthode statique qui prend la classe et l'enregistre auprès de l'éditeur
+    //déclaration d'une classe anonyme
+    class {
+        constructor(view) { //CM6 passe automatiquement la EditorView en argument
+            this.currentDiff = 0
+            this.decorations = this.setUpdatedLines(view, 0) // attribut imposé par CM6 — c'est lui qu'il lit pour savoir quoi afficher
+        }
+
+        update(update) { //Méthode imposée par CM6 — si elle existe sur la classe, CM6 l'appelle automatiquement après chaque transaction (scroll, click, ...). update est un objet ViewUpdate
+            if (update.docChanged || update.viewportChanged) {
+                this.decorations = this.setUpdatedLines(update.view, this.currentDiff)
+            }
+        }
+
+        setUpdatedLines(view, currentDif) {
+            this.currentDiff = currentDif
+            const builder = new RangeSetBuilder()
+
+            if (currentDif === null || !passDiff?.[currentDif])
+                return builder.finish()
+
+            const lignesDiff = passDiff[currentDif].split("\n") //on créé un tableau avec pour chaque élément une ligne de Diff
+
+            // couleurParLigneDoc[i] = couleur de la ligne i+1 du document
+            const couleurParLigneDoc = []
+
+            // numéro de ligne courant dans le fichier previous et next
+            let lignePrevious = 0
+            let ligneNext = 0
+
+            for (const ligneDiff of lignesDiff) {
+                // on ignore les en-têtes --- et +++ 
+                if (ligneDiff.startsWith('---') || ligneDiff.startsWith('+++'))
+                    continue
+
+                // ligne @@ : on extrait les numéros de départ
+                // format : @@ -startP,countP +startN,countN @@
+                if (ligneDiff.startsWith('@@')) {
+                    const match = ligneDiff.match(/@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/)
+                    console.log(match)
+                    if (match) {
+                        lignePrevious = parseInt(match[1])  // ligne de départ dans previous
+                        ligneNext     = parseInt(match[2])  // ligne de départ dans next
+                    }
+                    continue
+                }
+
+                const symbole = ligneDiff[0]
+
+                if (symbole === '-') {
+                    // ligne supprimée — seulement dans previous
+                    if (editorKey === 'previous') {
+                        couleurParLigneDoc[lignePrevious - 1] = "background: #ff000060"
+                    }
+                    lignePrevious++
+
+                } else if (symbole === '+') {
+                    // ligne ajoutée — seulement dans next
+                    if (editorKey === 'next') {
+                        couleurParLigneDoc[ligneNext - 1] = "background: #00ff2660"
+                    }
+                    ligneNext++
+
+                } else if (symbole === ' ') {
+                    // ligne inchangée — présente dans les deux
+                    if (editorKey === 'previous') {
+                        couleurParLigneDoc[lignePrevious - 1] = "background: #ffffff20"
+                    } else {
+                        couleurParLigneDoc[ligneNext - 1] = "background: #ffffff20"
+                    }
+                    lignePrevious++
+                    ligneNext++
+                }
+            }
+
+            for (const { from, to } of view.visibleRanges) {
+                let pos = from
+                while (pos <= to) {
+                    const line = view.state.doc.lineAt(pos)
+                    const color = couleurParLigneDoc[line.number - 1] ?? "background: #ffffff20"
+                    builder.add(line.from, line.from,
+                        Decoration.line({ attributes: { style: color } })
+                    )
+                    pos = line.to + 1
+                }
+            }
+
+            return builder.finish()
+        }
+
+    }, 
+    { decorations: v => v.decorations })
+
+    pluginRefs.set(editorKey, plugin)  // clé unique par éditeur
+    return plugin
+
 }
 
 
@@ -122,7 +226,7 @@ export const lineClickHandler = EditorView.domEventHandlers({ //méthode statiqu
         const plugin = trouverPlugin(view)
         if (!plugin) return
         const pos = view.posAtCoords({ x: event.clientX, y: event.clientY })
-        if (pos === null) return
+        if (pos == null) return
         const line = view.state.doc.lineAt(pos)
         plugin.setClickedLine(view, line.number)
     },
@@ -132,8 +236,8 @@ export const lineClickHandler = EditorView.domEventHandlers({ //méthode statiqu
         var plugin = trouverPlugin(view)
         if (plugin) {
             const pos = view.posAtCoords({ x: event.clientX, y: event.clientY })
-            if (pos === null) {
-                plugin.setHoveredLine(view, ligneClic)
+            if (pos == null) {
+                plugin.setHoveredLine(view, null)
             } else {
                 const line = view.state.doc.lineAt(pos)
                 plugin.setHoveredLine(view, line.number)
@@ -150,6 +254,14 @@ export const lineClickHandler = EditorView.domEventHandlers({ //méthode statiqu
     }
 
 })
+
+export function requestUpdateLines(view, currentDif) {
+    const plugin = trouverPlugin(view)
+    if (plugin) {
+        plugin.decorations = plugin.setUpdatedLines(view, currentDif)  // ← assigner
+        view.dispatch({})
+    }
+}
 
 function trouverPlugin(view) {
     for (const [key, pluginRef] of pluginRefs) {
