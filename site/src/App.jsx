@@ -189,12 +189,7 @@ export default function App() {
 
   useEffect(()=>{
     if (Array.isArray(reponseIA)){
-      
-      //ajout du premier IR au début
-      var codeIR = donnees["liste_ll"].map((elem) => elem.join("\n"));
-      codeIR = codeIR.join("\n");
-      donnees["liste_passes"].unshift(codeIR);
-
+      console.log(reponseIA);//TODO: Supprimer, c'est pour voir qu'on a les bons pass Diff et le IR au début
       var code = "";
       var h = 150; //hue
       var lesCouleursOutput = [];
@@ -285,6 +280,9 @@ export default function App() {
       try {
         const donnees = JSON.parse(texteBrut)
         if (donnees.status === 'success') {
+          var codeIR = donnees["liste_ll"].map((elem) => elem.join("\n"));
+          codeIR = codeIR.join("\n");
+          donnees["liste_passes"].unshift(codeIR);
           setReponseIA([donnees["liste_c"], donnees["liste_explication"],donnees["liste_ll"],donnees["liste_passes"],donnees["liste_diffs"]]);
         } else {
           setReponseIA("Erreur du serveur : " + donnees.message);
