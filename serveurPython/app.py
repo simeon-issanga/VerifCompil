@@ -146,7 +146,7 @@ def compile_code():
             }
         else :
             reponse = client.chat.completions.create(
-                model="llama-3.1-8b-instant",
+                model="openai/gpt-oss-120b",
                 messages=[
                     {"role": "system", "content": prompt_sys},
                     {"role": "user", "content": f"Voici le code C :\n{code_c}\nVoici le code LLVM IR :\n{llvm_ir}"}
