@@ -118,8 +118,12 @@ def compile_code():
         #  fichier IR
         with open(output_path, "r") as file_ll:
             llvm_ir = file_ll.read()
+
+        with open("fichTemp.ll","w") as f_temp:
+            f_temp.write(liste_passes[0])
         
-        
+        resultTemp = difference_entre_passes(file_ll, f_temp)
+        liste_diffs.insert(0, resultTemp)
 
         #  Requête à l'IA
         prompt_sys = """
@@ -146,7 +150,7 @@ def compile_code():
             }
         else :
             reponse = client.chat.completions.create(
-                model="qwen/qwen3-32b",
+                model="openai/gpt-oss-20b",
                 messages=[
                     {"role": "system", "content": prompt_sys},
                     {"role": "user", "content": f"Voici le code C :\n{code_c}\nVoici le code LLVM IR :\n{llvm_ir}"}
