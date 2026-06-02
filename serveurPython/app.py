@@ -85,6 +85,7 @@ def compile_code():
     uid = str(uuid.uuid4())
     file_path = f"temp_{uid}.c"
     output_path = f"temp_{uid}.ll"
+    fileTemp = f"file_temp_{uid}.ll"
     liste_passes = []
     liste_diffs = []
     try:
@@ -119,10 +120,11 @@ def compile_code():
         with open(output_path, "r") as file_ll:
             llvm_ir = file_ll.read()
 
-        with open("fichTemp.ll","w") as f_temp:
+        ## on a zappé le premier passe entre .ll généré 
+        with open(fileTemp, "w") as f_temp:
             f_temp.write(liste_passes[0])
-        
-        resultTemp = difference_entre_passes(file_ll, f_temp)
+
+        resultTemp = difference_entre_passes(output_path, fileTemp)
         liste_diffs.insert(0, resultTemp)
 
         #  Requête à l'IA
@@ -181,6 +183,7 @@ def compile_code():
     finally:
         if os.path.exists(file_path): os.remove(file_path)
         if os.path.exists(output_path): os.remove(output_path)
+        if os.path.exists(fileTemp): os.remove(fileTemp)
 
 
 
