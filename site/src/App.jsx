@@ -26,6 +26,7 @@ export default function App() {
   const nextPass = useRef(null);
 
 
+  //*** */
     //TEST de données pour reponseIA
   const donnees = {
     "liste_c": [
@@ -155,11 +156,11 @@ export default function App() {
     ],
     "status": "success"
 };
-//TODO : mettre au bon endroit quand on aura fait l'autre fonction pour les passes
-/*var codeIR = donnees["liste_ll"].map((elem) => elem.join("\n"));
+    var codeIR = donnees["liste_ll"].map((elem) => elem.join("\n"));
     codeIR = codeIR.join("\n");
     donnees["liste_passes"].unshift(codeIR);
-*/
+//*** */
+
   const [reponseIA,setReponseIA] = useState([donnees["liste_c"], donnees["liste_explication"],donnees["liste_ll"],donnees["liste_passes"],donnees["liste_diffs"]]);
   
   const [explications, setExplications] = useState('');
