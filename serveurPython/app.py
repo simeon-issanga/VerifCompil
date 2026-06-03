@@ -146,14 +146,20 @@ def compile_code():
                 "",
                 "",
                 "int a = 5;",
-                "return 0;"
+                "return 0;",
+                "",
+                "",
+                ""
             ],
             "liste_ll": [
                 ["source_filename = 'fichier.c'"],
                 ["target datalayout = 'e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-n32:64-S128-Fn32'"],
                 ["target triple = 'arm64-apple-macosx26.0.0'"],
                 ["%1 = alloca i32\\nstore i32 5, i32* %1"],
-                ["ret i32 0"]
+                ["ret i32 0"],
+                ["attributes #0 = { noinline nounwind optnone ssp uwtable \"frame-pointer\"=\"all\" }"],
+                ["!llvm.ident = !{!5}"],
+                ["!0 = !{i32 1, !"wchar_size", i32 4}"]
             ],
             "liste_explication": [
                 "Correspond au nom de fichier",
@@ -161,6 +167,9 @@ def compile_code():
                 "Machine cible du programme",
                 "Cette ligne alloca de la mémoire pour une variable entière et stocke la valeur 5 dedans.",
                 "Cette ligne retourne la valeur 0 pour indiquer que le programme s'est terminé avec succès."
+                "Définit comment les fonctions doivent être compilées (ex: pas d'optimisation, gestion de la pile)",
+                "Indique quel compilateur a généré ce fichier",
+                "Précise des constantes système, comme ici la taille de 4 octets pour les caractères larges (wchar_t)"
             ]
         }
         """
