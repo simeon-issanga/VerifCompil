@@ -192,7 +192,7 @@ def compile_code():
                     {"role": "user", "content": f"Voici le code C :\n{code_c}\nVoici le code LLVM IR :\n{llvm_ir}"}
                 ],
                 temperature=0.2,
-                #max_tokens=2000,
+                max_tokens=4000,
                 #response_format={"type": "json_object"}
             )
             
