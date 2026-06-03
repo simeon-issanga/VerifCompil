@@ -190,9 +190,9 @@ def compile_code():
                     {"role": "system", "content": prompt_sys},
                     {"role": "user", "content": f"Voici le code C :\n{code_c}\nVoici le code LLVM IR :\n{llvm_ir}"}
                 ],
-                temperature=1,
+                temperature=0.2,
                 #max_tokens=2000,
-                #response_format={"type": "json_object"}
+                response_format={"type": "json_object"}
             )
             
             # JSON pour transmettr les données
