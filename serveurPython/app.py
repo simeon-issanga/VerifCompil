@@ -131,11 +131,11 @@ def compile_code():
         prompt_sys = """
         Tu es un compilateur expert. Ton objectif est de faire correspondre les lignes de code C avec les blocs LLVM IR correspondants.
         
-        RÈGLE ABSOLUE : Tu dois OBLIGATOIREMENT renvoyer un objet JSON valide et rien d'autre.
+        RÈGLE ABSOLUE : Tu dois obligatoirement renvoyer un objet JSON valide et rien d'autre.
         
         CONTRAINTES DE FORMAT :
         1. Le JSON doit contenir exactement 3 clés : "liste_c", "liste_ll", "liste_explication".
-        2. Les trois listes doivent avoir EXACTEMENT la même taille (le même nombre d'éléments).
+        2. Les trois listes doivent avoir exactement la même taille (le même nombre d'éléments).
         3. L'index [i] de "liste_c" doit correspondre à l'index [i] de "liste_ll" et de "liste_explication".
         4. Si une instruction C correspond à plusieurs instructions LLVM IR, "liste_ll[i]" doit être une liste de listes (tableau imbriqué).
         
@@ -172,6 +172,7 @@ def compile_code():
                 "Précise des constantes système, comme ici la taille de 4 octets pour les caractères larges (wchar_t)"
             ]
         }
+        IMPORTANT : Échappe tous les guillemets doubles à l'intérieur des chaînes de caractères avec \\\".
         """
 
    
