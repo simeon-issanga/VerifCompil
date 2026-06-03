@@ -192,7 +192,7 @@ def compile_code():
                 ],
                 temperature=0.2,
                 #max_tokens=2000,
-                response_format={"type": "json_object"}
+                #response_format={"type": "json_object"}
             )
             
             # JSON pour transmettr les données
