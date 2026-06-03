@@ -129,16 +129,40 @@ def compile_code():
 
         #  Requête à l'IA
         prompt_sys = """
-        Tu es un compilateur expert. 
-        Ton objectif est de faire correspondre les lignes de code C avec les blocs LLVM IR correspondants.
-        Tu dois renvoyer uniquement un objet JSON valide avec cette structure exacte, sépare bien les éléments expliquant la configuration du compilateur dans les listes:
+        Tu es un compilateur expert. Ton objectif est de faire correspondre les lignes de code C avec les blocs LLVM IR correspondants.
+        
+        RÈGLE ABSOLUE : Tu dois OBLIGATOIREMENT renvoyer un objet JSON valide et rien d'autre.
+        
+        CONTRAINTES DE FORMAT :
+        1. Le JSON doit contenir exactement 3 clés : "liste_c", "liste_ll", "liste_explication".
+        2. Les trois listes doivent avoir EXACTEMENT la même taille (le même nombre d'éléments).
+        3. L'index [i] de "liste_c" doit correspondre à l'index [i] de "liste_ll" et de "liste_explication".
+        4. Si une instruction C correspond à plusieurs instructions LLVM IR, "liste_ll[i]" doit être une liste de listes (tableau imbriqué).
+        
+        VOICI LE FORMAT JSON ATTENDU :
         {
-            "liste_c": ["fichier.c","","","int a = 5;", "return 0;"],
-            "liste_ll": [["source_filename = 'fichier.c'"],["target datalayout = 'e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-n32:64-S128-Fn32'"], ["target triple = 'arm64-apple-macosx26.0.0'"],["%1 = alloca i32\\nstore i32 5, i32* %1"], ["ret i32 0"],["declare i32 @printf(ptr noundef, ...) #1"]],
-            "liste_explication": ["correspond au nom de fichier","e indique une représentation little-endian m:o utilise le format Mach-O  p270:32:32 et p271:32:32 définissent que les pointeurs situés dans les espaces d'adressage spécifiques 270 et 271 ont une taille de 32 bits pour un alignement ABI de 32 bits,  p272:64:64 applique une taille et un alignement de 64 bits pour les pointeurs de l'espace 272 ;  i64:64 et i128:128 imposent respectivement un alignement strict de 64 bits pour les entiers de 64 bits et de 128 bits pour les entiers de 128 bits, n32:64 informe le compilateur que le processeur cible gère de façon native les largeurs d'entiers de 32 et 64 bits, S128 garantit que l'alignement naturel de la pile d'exécution s'effectue sur des blocs de 128 bits, et enfin, Fn3２ exige que l'alignement des pointeurs de fonction soit un multiple de 3２ bits.", "machine cible du programme","Cette ligne alloue de la mémoire pour une variable entière et stocke la valeur 5 dedans.", "Cette ligne retourne la valeur 0 pour indiquer que le programme s'est terminé avec succès.","indiquant qu'elle retourne un entier de 32 bits (i32) et est identifiée par @printf"]
+            "liste_c": [
+                "fichier.c",
+                "",
+                "",
+                "int a = 5;",
+                "return 0;"
+            ],
+            "liste_ll": [
+                ["source_filename = 'fichier.c'"],
+                ["target datalayout = 'e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-n32:64-S128-Fn32'"],
+                ["target triple = 'arm64-apple-macosx26.0.0'"],
+                ["%1 = alloca i32\\nstore i32 5, i32* %1"],
+                ["ret i32 0"]
+            ],
+            "liste_explication": [
+                "Correspond au nom de fichier",
+                "Configuration du datalayout : e indique une représentation little-endian, S128 garantit un alignement sur 128 bits, et Fn32 exige un alignement des pointeurs de fonction sur 32 bits.",
+                "Machine cible du programme",
+                "Cette ligne alloca de la mémoire pour une variable entière et stocke la valeur 5 dedans.",
+                "Cette ligne retourne la valeur 0 pour indiquer que le programme s'est terminé avec succès."
+            ]
         }
-        Exceptions : Si une instruction du code C correspond à plusieurs instructions LLVM IR je veux une liste de listes pour l'élément de "liste_ll[i]"
-        Les trois listes doivent avoir exactement la même taille. L'index 0 de liste_c correspond à l'index 0 de liste_ll et à l'index 0 de liste_explication.
         """
 
    
@@ -152,7 +176,7 @@ def compile_code():
             }
         else :
             reponse = client.chat.completions.create(
-                model="openai/gpt-oss-120b",
+                model="openai/gpt-oss-20b",
                 messages=[
                     {"role": "system", "content": prompt_sys},
                     {"role": "user", "content": f"Voici le code C :\n{code_c}\nVoici le code LLVM IR :\n{llvm_ir}"}
