@@ -1,6 +1,23 @@
 version: '3.8'
 
 services:
+  ollama:
+    ollama:
+      image: ollama/ollama:latest
+      container_name: ollama-verif
+      volumes:
+        - ollama_data:/root/.ollama
+      networks:
+        - verif_compil
+      
+      deploy:
+        resources:
+          reservations:
+            devices:
+              - driver: nvidia
+                count: 1
+                capabilities: [gpu]
+
   # frontend (React.js propulse par Node)
   web:
     build: ./site
@@ -27,6 +44,8 @@ services:
       - PYTHONUNBUFFERED=1
     ports:
       - '5000:5000'
+    depends_on:
+      - ollama
     networks:
       - verif_compil
 
@@ -44,6 +63,9 @@ services:
       - pythonserver
     networks:
       - verif_compil
+
+volumes:
+  ollama_data:
 
 networks:
   verif_compil:
