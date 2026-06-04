@@ -174,7 +174,7 @@ def compile_code():
         }
         IMPORTANT : 
             Échappe tous les guillemets doubles à l'intérieur des chaînes de caractères avec \\\".
-            Sépare bien source_filename, target datalayout,target triple pour les explications
+            Explique bien chaque métadonnées au début.
         """
 
    
