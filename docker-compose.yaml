@@ -9,14 +9,14 @@ services:
         - ollama_data:/root/.ollama
       networks:
         - verif_compil
-      
+      # rappel futur : ne jamais exposé ses types de ports car gpu peut être utilisé 
       deploy:
         resources:
           reservations:
             devices:
               - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+                count: 1
+                capabilities: [gpu]
 
   # frontend (React.js propulse par Node)
   web:
