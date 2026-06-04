@@ -14,7 +14,6 @@ client = OpenAI(
 )
 
 
-
 def transformer_en_liste(dossier_path):
     la_liste = []
     dossier = Path(dossier_path)
@@ -60,6 +59,8 @@ def compile_code():
     file_path = f"temp_{uid}.c"
     output_path = f"temp_{uid}.ll"
     liste_passes = []
+    pass_dir = None
+    
     try:
         donnes = request.get_json()
         code_c = donnes.get('code', '')
@@ -67,16 +68,14 @@ def compile_code():
         if not code_c.strip():
             return jsonify({"status": "error", "message": "Le code est vide"})
 
-        # du C au .ll 
-        file_path = "fichier.c"
+        
         with open(file_path, "w") as file:
             file.write(code_c)
+        
         liste_passes, pass_dir = avoir_passe(file_path, uid)
+        
         commande_bash = ["clang", file_path, "-emit-llvm", "-S", "-c", "-o", output_path]
         resultat_terminal = subprocess.run(commande_bash, capture_output=True, text=True, timeout=15)
-
-        if os.path.exists(file_path):
-            os.remove(file_path)
 
         if resultat_terminal.returncode != 0:
             return jsonify({
@@ -84,36 +83,10 @@ def compile_code():
                 "message": f"Erreur de compilation Clang :\n{resultat_terminal.stderr}"
             })
 
-        #  fichier IR
         with open(output_path, "r") as file_ll:
             llvm_ir = file_ll.read()
-        os.remove(output_path)
 
-        #  Requête à l'IA
-        prompt_sys = """Tu es un compilateur expert. 
-        Ton objectif est de faire correspondre les lignes de code C avec les blocs LLVM IR correspondants.
-        Tu dois renvoyer uniquement un objet JSON valide avec cette structure exacte :
-        {
-            "liste_c": ["int a = 5;", "return 0;"],
-            "liste_ll": ["%1 = alloca i32\\nstore i32 5, i32* %1", "ret i32 0"],
-            "liste_explication": ["Cette ligne alloue de la mémoire pour une variable entière et stocke la valeur 5 dedans.", "Cette ligne retourne la valeur 0 pour indiquer que le programme s'est terminé avec succès."]
-        }
-        Exceptions : Si une instruction du code C correspond à plusieurs instructions LLVM IR je veux une liste de listes pour l'élément de "liste_ll[i]"
-        Les trois listes doivent avoir exactement la même taille. L'index 0 de liste_c correspond à l'index 0 de liste_ll et à l'index 0 de liste_explication.
-        """
-        reponse = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": prompt_sys},
-                {"role": "user", "content": f"Voici le code C :\n{code_c}\nVoici le code LLVM IR :\n{llvm_ir}"}
-            ],
-            temperature=0.2,
-            #max_tokens=2000,
-            response_format={"type": "json_object"}
-        )
-        
-        # JSON pour transmettr les données
-        donnees_ia = json.loads(reponse.choices[0].message.content)
+        donnees_ia = {"liste_c": [], "liste_ll": [], "liste_explication": []}
         
         return jsonify({
             "status": "success", 
@@ -124,33 +97,11 @@ def compile_code():
         })
 
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": f"Erreur interne du serveur Python : {str(e)}"
-        }), 500
+        return jsonify({"status": "error", "message": str(e)}), 500
 
     finally:
         if os.path.exists(file_path): os.remove(file_path)
         if os.path.exists(output_path): os.remove(output_path)
-
-
-#def avoir_passe(file_c):
-#    commande_bash1 = ["clang",  "-mllvm", "-print-after-all", file_c ,"-c", "-o", "/dev/null", "2>", "passes.txt"]
-#    commande_bash2 = ["awk", '/\*\*\* IR Dump After/{filename=sprintf("passes/pass_db_%02d.ll", ++count)} {if(filename) print > filename}', "passes.txt"]
-#    try :
-#        resultat_terminal1 = subprocess.run(commande_bash1, capture_output=True)
-#        if resultat_terminal1.returncode != 0:
-#            return (f"Erreur lors de l'exécution de la commande bash 1 :\n{resultat_terminal1.stderr.decode()}")
-#        else :
-#            resultat_terminal2 = subprocess.run(commande_bash2, capture_output=True)
-#            if resultat_terminal2.returncode != 0:
-#                return (f"Erreur lors de l'exécution de la commande bash 2 :\n{resultat_terminal2.stderr.decode()}")
-#
-#            return transformer_en_liste("passes")
-#               
-#    except Exception as e:
-#        return (f"Erreur fonction   avoir_passe : {str(e)}")
-        
 
 
 if __name__ == '__main__':
