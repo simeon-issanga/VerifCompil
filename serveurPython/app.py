@@ -172,7 +172,9 @@ def compile_code():
                 "Précise des constantes système, comme ici la taille de 4 octets pour les caractères larges (wchar_t)"
             ]
         }
-        IMPORTANT : Échappe tous les guillemets doubles à l'intérieur des chaînes de caractères avec \\\".
+        IMPORTANT : 
+            Échappe tous les guillemets doubles à l'intérieur des chaînes de caractères avec \\\".
+            Sépare bien source_filename, target datalayout,target triple pour les explications
         """
 
    
