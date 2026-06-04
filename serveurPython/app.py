@@ -188,7 +188,7 @@ def compile_code():
             }
         else :
             reponse = client.chat.completions.create(
-                model="openai/gpt-oss-20b",
+                model="openai/gpt-oss-120b",
                 messages=[
                     {"role": "system", "content": prompt_sys},
                     {"role": "user", "content": f"Voici le code C :\n{code_c}\nVoici le code LLVM IR :\n{llvm_ir}"}
