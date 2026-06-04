@@ -9,7 +9,7 @@ services:
         - ollama_data:/root/.ollama
       networks:
         - verif_compil
-      
+      # rappel futur : ne jamais exposé ses types de ports car gpu peut être utilisé 
       deploy:
         resources:
           reservations:
