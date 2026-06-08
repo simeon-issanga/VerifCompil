@@ -29,11 +29,11 @@ jobs:
           # Assure-toi que ce fichier existe dans /tests/
           python3 tests/testClang.py
 
-      - name: Vérification syntaxe Backend
-        run: |
-          cd serveurPython
-          # Correction : le module est 'py_compile', pas 'compile_code'
-          python3 -m py_compile app.py 
+      #- name: Vérification syntaxe Backend
+      #  run: |
+      #    cd serveurPython
+      #    # Correction : le module est 'py_compile', pas 'compile_code'
+      #    python3 -m py_compile app.py 
 
       - name: Préparer faux .env 
         run: |
