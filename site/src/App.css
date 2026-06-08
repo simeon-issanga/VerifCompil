@@ -2,36 +2,92 @@
 
 h2 {
   text-align: center;
-  color:rgb(79, 63, 41);
+  color: rgb(79, 63, 41);
   background-color: rgb(49, 185, 192);
   border: 2px dashed;
 }
 
+.language-selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  font-weight: 600;
+}
+
+.language-selector select {
+  border: 1px solid #c4cdd6;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #1f2937;
+  padding: 0.6rem 0.85rem;
+  min-width: 160px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.language-selector select:focus {
+  outline: 2px solid #6ea8ff;
+  outline-offset: 2px;
+}
 
 div.flex-container {
   display: flex;
   flex-direction: row;
+  gap: 1rem;
 }
 
 div.flex-container > div {
   flex: 1;
+  min-width: 0;
 }
 
 .editor {
   margin: 10px 20px;
 }
 
-.btnValider {
-  display: block;
+button {
+  font-family: inherit;
+  border: 1px solid #c4cdd6;
   border-radius: 10px;
+  background-color: #f7fbff;
+  color: #1f2937;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+  margin: 0.35rem 0.25rem;
+}
+
+button:hover {
+  background-color: #edf4fb;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button:focus-visible {
+  outline: 2px solid #6ea8ff;
+  outline-offset: 2px;
+}
+
+.btnValider {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 120px;
   background-color: #43a45c;
-  width: 100px;
-  margin: 10px auto;
+  color: #ffffff;
+  border-color: #3d9250;
+  margin: 0.7rem 0.25rem;
 }
 
 .btnNavigation {
-  display: block;
-  margin: 10px 
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #ffffff;
+  color: #1f2937;
 }
 
 .explications {

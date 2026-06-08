@@ -87,9 +87,6 @@ export function createLineHoverHighlighter(lesCouleurs, lesExplications,tabNumLi
             view.dispatch({})
         }
 
-
-
-
         build(view) { //Calcule et retourne un RangeSet — la liste de toutes les décorations à appliquer.
             const builder = new RangeSetBuilder()
             for (const { from, to } of view.visibleRanges) {
@@ -160,7 +157,6 @@ export function createLineDiffHiglighter(editorKey, passDiff){
                 // format : @@ -startP,countP +startN,countN @@
                 if (ligneDiff.startsWith('@@')) {
                     const match = ligneDiff.match(/@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/)
-                    console.log(match)
                     if (match) {
                         lignePrevious = parseInt(match[1])  // ligne de départ dans previous
                         ligneNext     = parseInt(match[2])  // ligne de départ dans next
