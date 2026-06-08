@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-verif
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - verif_compil
+
+  web:
+    build: ./site
+    container_name: serveur-verif_compil
+    networks:
+      - verif_compil
+
+  pythonserver:
+    build: ./serveurPython
+    container_name: pythonserver-verif_compil
+    networks:
+      - verif_compil
+
+volumes:
+  ollama_data:
+
+networks:
+  verif_compil:
+    driver: bridge

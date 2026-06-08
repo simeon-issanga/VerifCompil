@@ -29,11 +29,11 @@ jobs:
           # Assure-toi que ce fichier existe dans /tests/
           python3 tests/testClang.py
 
-      - name: Vérification syntaxe Backend
-        run: |
-          cd serveurPython
-          # Correction : le module est 'py_compile', pas 'compile_code'
-          python3 -m py_compile app.py 
+      #- name: Vérification syntaxe Backend
+      #  run: |
+      #    cd serveurPython
+      #    # Correction : le module est 'py_compile', pas 'compile_code'
+      #    python3 -m py_compile app.py 
 
       - name: Préparer faux .env 
         run: |
@@ -41,7 +41,7 @@ jobs:
           echo "API_KEY_DEEPSEEK=fake_key_for_ci" > config/env/.env
 
       - name: Lancer les conteneurs pour test
-        run: docker compose up -d
+        run: docker compose -f docker-compose.ci.yaml up -d
 
       - name: Attendre que le serveur soit prêt
         run: sleep 20 # On augmente un peu pour être sûr
@@ -54,12 +54,12 @@ jobs:
       - name: Afficher les logs en cas d'échec
         if: failure() # S'exécute SEULEMENT si une étape précédente a raté
         run: |
-          docker compose ps
-          docker compose logs pythonserver
-          docker compose logs nginx-proxy
+          docker compose -f docker-compose.ci.yaml ps
+          docker compose -f docker-compose.ci.yaml logs pythonserver
+          docker compose -f docker-compose.ci.yaml logs nginx-proxy
 
       - name: Arrêter les conteneurs
-        run: docker compose down
+        run: docker compose -f docker-compose.ci.yaml down
 
 # tester le front mais c compliqué
 

@@ -9,13 +9,28 @@ import { irLanguage, irHighlight } from "./IRLanguage"
 import { tags } from "@lezer/highlight"
 import { StreamLanguage, HighlightStyle, syntaxHighlighting } from "@codemirror/language"
 import { createLineHoverHighlighter, createLineDiffHiglighter, lineClickHandler, requestUpdateLines } from "./lineClickHandler"
+import { useTranslation } from 'react-i18next';
+import i18n from './i18n.js'
+
 
 const inputHighlighterCompartment = new Compartment();
 const outputHighlighterCompartment = new Compartment();
 const previousPassHighlighterCompartment = new Compartment();
 const nextPassHighlighterCompartment = new Compartment();
 
+let niveau_optimisation = 0;
+
 export default function App() {
+
+  const { t, i18n } = useTranslation(); //pour la traduction
+  const [language, setLanguage] = useState(i18n.language ?? 'fr');
+
+  const handleLanguageChange = (event) => {
+    const nextLang = event.target.value;
+    setLanguage(nextLang);
+    i18n.changeLanguage(nextLang);
+  };
+
   // useRef : persiste entre les rendus et ne déclenche aucun re-rendu, banger non ?!
   const inputRef = useRef(null)   // view de l'éditeur source
   const outputRef = useRef(null)   // view de l'éditeur output
@@ -30,7 +45,7 @@ export default function App() {
       "printf(\"Hello, world!\\n\");",
       "return 0;"
     ],
-    "liste_diffs": [
+    "liste_diffsO0": [
       " ",//TODO en attente de Sim pour le 1er diff
       "--- passes_69dba41a-a366-4216-8ba7-c7283a6ba711/pass_01.ll\t2026-06-01 07:22:13.308794510 +0000\n+++ passes_69dba41a-a366-4216-8ba7-c7283a6ba711/pass_02.ll\t2026-06-01 07:22:13.308794510 +0000\n@@ -1,11 +1,4 @@\n-*** IR Dump After AlwaysInlinerPass on [module] ***\n-; ModuleID = 'fichier.c'\n-source_filename = \"fichier.c\"\n-target datalayout = \"e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128\"\n-target triple = \"x86_64-pc-linux-gnu\"\n-\n-@.str = private unnamed_addr constant [15 x i8] c\"Hello, world!\\0A\\00\", align 1\n-\n+*** IR Dump After CoroEarlyPass on main ***\n ; Function Attrs: noinline nounwind optnone uwtable\n define dso_local i32 @main() #0 {\n   %1 = alloca i32, align 4\n@@ -13,18 +6,3 @@\n   %2 = call i32 (i8*, ...) @printf(i8* noundef getelementptr inbounds ([15 x i8], [15 x i8]* @.str, i64 0, i64 0))\n   ret i32 0\n }\n-\n-declare i32 @printf(i8* noundef, ...) #1\n-\n-attributes #0 = { noinline nounwind optnone uwtable \"frame-pointer\"=\"all\" \"min-legal-vector-width\"=\"0\" \"no-trapping-math\"=\"true\" \"stack-protector-buffer-size\"=\"8\" \"target-cpu\"=\"x86-64\" \"target-features\"=\"+cx8,+fxsr,+mmx,+sse,+sse2,+x87\" \"tune-cpu\"=\"generic\" }\n-attributes #1 = { \"frame-pointer\"=\"all\" \"no-trapping-math\"=\"true\" \"stack-protector-buffer-size\"=\"8\" \"target-cpu\"=\"x86-64\" \"target-features\"=\"+cx8,+fxsr,+mmx,+sse,+sse2,+x87\" \"tune-cpu\"=\"generic\" }\n-\n-!llvm.module.flags = !{!0, !1, !2, !3, !4}\n-!llvm.ident = !{!5}\n-\n-!0 = !{i32 1, !\"wchar_size\", i32 4}\n-!1 = !{i32 7, !\"PIC Level\", i32 2}\n-!2 = !{i32 7, !\"PIE Level\", i32 2}\n-!3 = !{i32 7, !\"uwtable\", i32 1}\n-!4 = !{i32 7, !\"frame-pointer\", i32 2}\n-!5 = !{!\"Debian clang version 14.0.6\"}\n",
       "--- passes_69dba41a-a366-4216-8ba7-c7283a6ba711/pass_02.ll\t2026-06-01 07:22:13.308794510 +0000\n+++ passes_69dba41a-a366-4216-8ba7-c7283a6ba711/pass_03.ll\t2026-06-01 07:22:13.309794504 +0000\n@@ -1,4 +1,4 @@\n-*** IR Dump After CoroEarlyPass on main ***\n+*** IR Dump After CoroSplitPass on (main) ***\n ; Function Attrs: noinline nounwind optnone uwtable\n define dso_local i32 @main() #0 {\n   %1 = alloca i32, align 4\n",
@@ -80,12 +95,12 @@ export default function App() {
       "--- passes_69dba41a-a366-4216-8ba7-c7283a6ba711/pass_46.ll\t2026-06-01 07:22:13.356794192 +0000\n+++ passes_69dba41a-a366-4216-8ba7-c7283a6ba711/pass_47.ll\t2026-06-01 07:22:13.357794186 +0000\n@@ -1,4 +1,4 @@\n-*** IR Dump After Check CFA info and insert CFI instructions if needed (cfi-instr-inserter) ***:\n+*** IR Dump After X86 Load Value Injection (LVI) Ret-Hardening (x86-lvi-ret) ***:\n # Machine code for function main: NoPHIs, TracksLiveness, NoVRegs, TiedOpsRewritten\n Frame Objects:\n   fi#-1: size=8, align=16, fixed, at location [SP-8]\n",
       "--- passes_69dba41a-a366-4216-8ba7-c7283a6ba711/pass_47.ll\t2026-06-01 07:22:13.357794186 +0000\n+++ passes_69dba41a-a366-4216-8ba7-c7283a6ba711/pass_48.ll\t2026-06-01 07:22:13.358794179 +0000\n@@ -1,4 +1,4 @@\n-*** IR Dump After X86 Load Value Injection (LVI) Ret-Hardening (x86-lvi-ret) ***:\n+*** IR Dump After Pseudo Probe Inserter (pseudo-probe-inserter) ***:\n # Machine code for function main: NoPHIs, TracksLiveness, NoVRegs, TiedOpsRewritten\n Frame Objects:\n   fi#-1: size=8, align=16, fixed, at location [SP-8]\n@@ -23,4 +23,4 @@\n \n # End machine code for function main.\n \n-# \n\\ No newline at end of file\n+1 warning generated.\n"
     ],
-    "liste_explication": [
+    "liste_explicationO0": [
       "Cette partie définit les métadonnées du module LLVM IR, telles que le nom du fichier source et la cible de compilation.",
       "Cette ligne appelle la fonction printf avec la chaîne \"Hello, world!\\n\" comme argument. La chaîne est définie comme une constante dans le code LLVM IR.",
       "Cette ligne retourne la valeur 0 pour indiquer que le programme s'est terminé avec succès."
     ],
-    "liste_ll": [
+    "liste_llO0": [
       [
         "; ModuleID = 'fichier.c'",
         "source_filename = \"fichier.c\"",
@@ -100,7 +115,7 @@ export default function App() {
         "ret i32 0"
       ]
     ],
-    "liste_passes": [
+    "liste_passesO0": [
       "*** IR Dump After AlwaysInlinerPass on [module] ***\n; ModuleID = 'fichier.c'\nsource_filename = \"fichier.c\"\ntarget datalayout = \"e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128\"\ntarget triple = \"x86_64-pc-linux-gnu\"\n\n@.str = private unnamed_addr constant [15 x i8] c\"Hello, world!\\0A\\00\", align 1\n\n; Function Attrs: noinline nounwind optnone uwtable\ndefine dso_local i32 @main() #0 {\n  %1 = alloca i32, align 4\n  store i32 0, i32* %1, align 4\n  %2 = call i32 (i8*, ...) @printf(i8* noundef getelementptr inbounds ([15 x i8], [15 x i8]* @.str, i64 0, i64 0))\n  ret i32 0\n}\n\ndeclare i32 @printf(i8* noundef, ...) #1\n\nattributes #0 = { noinline nounwind optnone uwtable \"frame-pointer\"=\"all\" \"min-legal-vector-width\"=\"0\" \"no-trapping-math\"=\"true\" \"stack-protector-buffer-size\"=\"8\" \"target-cpu\"=\"x86-64\" \"target-features\"=\"+cx8,+fxsr,+mmx,+sse,+sse2,+x87\" \"tune-cpu\"=\"generic\" }\nattributes #1 = { \"frame-pointer\"=\"all\" \"no-trapping-math\"=\"true\" \"stack-protector-buffer-size\"=\"8\" \"target-cpu\"=\"x86-64\" \"target-features\"=\"+cx8,+fxsr,+mmx,+sse,+sse2,+x87\" \"tune-cpu\"=\"generic\" }\n\n!llvm.module.flags = !{!0, !1, !2, !3, !4}\n!llvm.ident = !{!5}\n\n!0 = !{i32 1, !\"wchar_size\", i32 4}\n!1 = !{i32 7, !\"PIC Level\", i32 2}\n!2 = !{i32 7, !\"PIE Level\", i32 2}\n!3 = !{i32 7, !\"uwtable\", i32 1}\n!4 = !{i32 7, !\"frame-pointer\", i32 2}\n!5 = !{!\"Debian clang version 14.0.6\"}\n",
       "*** IR Dump After CoroEarlyPass on main ***\n; Function Attrs: noinline nounwind optnone uwtable\ndefine dso_local i32 @main() #0 {\n  %1 = alloca i32, align 4\n  store i32 0, i32* %1, align 4\n  %2 = call i32 (i8*, ...) @printf(i8* noundef getelementptr inbounds ([15 x i8], [15 x i8]* @.str, i64 0, i64 0))\n  ret i32 0\n}\n",
       "*** IR Dump After CoroSplitPass on (main) ***\n; Function Attrs: noinline nounwind optnone uwtable\ndefine dso_local i32 @main() #0 {\n  %1 = alloca i32, align 4\n  store i32 0, i32* %1, align 4\n  %2 = call i32 (i8*, ...) @printf(i8* noundef getelementptr inbounds ([15 x i8], [15 x i8]* @.str, i64 0, i64 0))\n  ret i32 0\n}\n",
@@ -150,31 +165,115 @@ export default function App() {
       "*** IR Dump After X86 Load Value Injection (LVI) Ret-Hardening (x86-lvi-ret) ***:\n# Machine code for function main: NoPHIs, TracksLiveness, NoVRegs, TiedOpsRewritten\nFrame Objects:\n  fi#-1: size=8, align=16, fixed, at location [SP-8]\n  fi#0: size=4, align=4, at location [SP-12]\n\nbb.0 (%ir-block.0):\n  frame-setup PUSH64r killed $rbp, implicit-def $rsp, implicit $rsp\n  CFI_INSTRUCTION def_cfa_offset 16\n  CFI_INSTRUCTION offset $rbp, -16\n  $rbp = frame-setup MOV64rr $rsp\n  CFI_INSTRUCTION def_cfa_register $rbp\n  $rsp = frame-setup SUB64ri8 $rsp(tied-def 0), 16, implicit-def dead $eflags\n  MOV32mi $rbp, 1, $noreg, -4, $noreg, 0 :: (store (s32) into %ir.1)\n  renamable $rdi = LEA64r $rip, 1, $noreg, @.str, $noreg\n  $al = MOV8ri 0\n  CALL64pcrel32 target-flags(x86-plt) @printf, <regmask $bh $bl $bp $bph $bpl $bx $ebp $ebx $hbp $hbx $rbp $rbx $r12 $r13 $r14 $r15 $r12b $r13b $r14b $r15b $r12bh $r13bh $r14bh $r15bh $r12d $r13d $r14d $r15d $r12w $r13w $r14w $r15w $r12wh and 3 more...>, implicit $rsp, implicit $ssp, implicit killed $al, implicit killed $rdi, implicit-def $eax\n  renamable $eax = XOR32rr undef $eax(tied-def 0), undef $eax, implicit-def dead $eflags\n  $rsp = frame-destroy ADD64ri8 $rsp(tied-def 0), 16, implicit-def dead $eflags\n  $rbp = frame-destroy POP64r implicit-def $rsp, implicit $rsp\n  CFI_INSTRUCTION def_cfa $rsp, 8\n  RET64 implicit killed $eax\n\n# End machine code for function main.\n\n# ",
       "*** IR Dump After Pseudo Probe Inserter (pseudo-probe-inserter) ***:\n# Machine code for function main: NoPHIs, TracksLiveness, NoVRegs, TiedOpsRewritten\nFrame Objects:\n  fi#-1: size=8, align=16, fixed, at location [SP-8]\n  fi#0: size=4, align=4, at location [SP-12]\n\nbb.0 (%ir-block.0):\n  frame-setup PUSH64r killed $rbp, implicit-def $rsp, implicit $rsp\n  CFI_INSTRUCTION def_cfa_offset 16\n  CFI_INSTRUCTION offset $rbp, -16\n  $rbp = frame-setup MOV64rr $rsp\n  CFI_INSTRUCTION def_cfa_register $rbp\n  $rsp = frame-setup SUB64ri8 $rsp(tied-def 0), 16, implicit-def dead $eflags\n  MOV32mi $rbp, 1, $noreg, -4, $noreg, 0 :: (store (s32) into %ir.1)\n  renamable $rdi = LEA64r $rip, 1, $noreg, @.str, $noreg\n  $al = MOV8ri 0\n  CALL64pcrel32 target-flags(x86-plt) @printf, <regmask $bh $bl $bp $bph $bpl $bx $ebp $ebx $hbp $hbx $rbp $rbx $r12 $r13 $r14 $r15 $r12b $r13b $r14b $r15b $r12bh $r13bh $r14bh $r15bh $r12d $r13d $r14d $r15d $r12w $r13w $r14w $r15w $r12wh and 3 more...>, implicit $rsp, implicit $ssp, implicit killed $al, implicit killed $rdi, implicit-def $eax\n  renamable $eax = XOR32rr undef $eax(tied-def 0), undef $eax, implicit-def dead $eflags\n  $rsp = frame-destroy ADD64ri8 $rsp(tied-def 0), 16, implicit-def dead $eflags\n  $rbp = frame-destroy POP64r implicit-def $rsp, implicit $rsp\n  CFI_INSTRUCTION def_cfa $rsp, 8\n  RET64 implicit killed $eax\n\n# End machine code for function main.\n\n1 warning generated.\n"
     ],
+
+    "liste_explicationO1": ["explication1"],
+    "liste_llO1": [
+      [
+        "; ModuleID = 'fichier.c' EXEMPLE 1",
+        "source_filename = \"fichier.c\"",
+        "target datalayout = \"e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128\"",
+        "target triple = \"x86_64-pc-linux-gnu\""
+      ]
+    ],
+    "liste_passesO1": [`; ModuleID = 'fichier.c' EXEMPLE 1\nsource_filename = "non"\ntarget datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"\ntarget triple = "toujours pas"`],
+    "liste_diffsO1": [`-; ModuleID = 'fichier.c' EXEMPLE 1\n+target triple = "toujours pas"`],
+
+    "liste_explicationO2": ["explication2"],
+    "liste_llO2": [
+      [
+        "; ModuleID = 'fichier.c' EXEMPLE 2",
+        "source_filename = \"fichier.c\"",
+        "target datalayout = \"e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128\"",
+        "target triple = \"x86_64-pc-linux-gnu\""
+      ]
+    ],
+    "liste_passesO2": ["pass2"],
+    "liste_diffsO2": ["difference2"],
+
+    "liste_explicationO3": ["explication3"],
+    "liste_llO3": [
+      [
+        "; ModuleID = 'fichier.c' EXEMPLE 3",
+        "source_filename = \"fichier.c\"",
+        "target datalayout = \"e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128\"",
+        "target triple = \"x86_64-pc-linux-gnu\""
+      ]
+    ],
+    "liste_passesO3": ["pass3"],
+    "liste_diffsO3": ["difference3"],
+
+
     "status": "success"
   };
-  var codeIR = donnees["liste_ll"].map((elem) => elem.join("\n"));
-  codeIR = codeIR.join("\n");
-  donnees["liste_passes"].unshift(codeIR);
-  //*** */
+  {
+    var codeIR = donnees["liste_llO0"].map((elem) => elem.join("\n"));
+    codeIR = codeIR.join("\n");
+    donnees["liste_passesO0"].unshift(codeIR);
+    codeIR = donnees["liste_llO1"].map((elem) => elem.join("\n"));
+    codeIR = codeIR.join("\n");
+    donnees["liste_passesO1"].unshift(codeIR);
+    codeIR = donnees["liste_llO2"].map((elem) => elem.join("\n"));
+    codeIR = codeIR.join("\n");
+    donnees["liste_passesO2"].unshift(codeIR);
+    codeIR = donnees["liste_llO3"].map((elem) => elem.join("\n"));
+    codeIR = codeIR.join("\n");
+    donnees["liste_passesO3"].unshift(codeIR);
+    //*** */
+  }
 
-  const [reponseIA, setReponseIA] = useState([donnees["liste_c"], donnees["liste_explication"], donnees["liste_ll"], donnees["liste_passes"], donnees["liste_diffs"]]);
+  let reponseIA = {
+    liste_c: donnees["liste_c"],
+    liste_explicationO0: donnees["liste_explicationO0"],
+    liste_llO0: donnees["liste_llO0"],
+    liste_passesO0: donnees["liste_passesO0"],
+    liste_diffsO0: donnees["liste_diffsO0"],
+    liste_explicationO1: donnees["liste_explicationO1"],
+    liste_llO1: donnees["liste_llO1"],
+    liste_passesO1: donnees["liste_passesO1"],
+    liste_diffsO1: donnees["liste_diffsO1"],
+    liste_explicationO2: donnees["liste_explicationO2"],
+    liste_llO2: donnees["liste_llO2"],
+    liste_passesO2: donnees["liste_passesO2"],
+    liste_diffsO2: donnees["liste_diffsO2"],
+    liste_explicationO3: donnees["liste_explicationO3"],
+    liste_llO3: donnees["liste_llO3"],
+    liste_passesO3: donnees["liste_passesO3"],
+    liste_diffsO3: donnees["liste_diffsO3"],
+  };
   const [explications, setExplications] = useState('');
   const [currentPass, setCurrentPass] = useState(0);
   const [message, setMessage] = useState('');
+  const [nbPasses, setNbPasses] = useState(0);
 
   useEffect(() => { //met à jour l'affichage lors de l'appuie sur les flèches.
+    let listePass;
+    switch (niveau_optimisation) {
+      case 0:
+        listePass = reponseIA.liste_passesO0
+        break;
+      case 1:
+        listePass = reponseIA.liste_passesO1
+        break;
+      case 2:
+        listePass = reponseIA.liste_passesO2
+        break;
+      case 3:
+        listePass = reponseIA.liste_passesO3
+        break;
+    }
+
     previousPass.current.dispatch({
       changes: {
         from: 0,
         to: previousPass.current.state.doc.length,
-        insert: reponseIA[3][currentPass] ?? "",
+        insert: listePass[currentPass] ?? "",
       }
     });
     nextPass.current.dispatch({
       changes: {
         from: 0,
         to: nextPass.current.state.doc.length,
-        insert: reponseIA[3][currentPass + 1] ?? "",
+        insert: listePass[currentPass + 1] ?? "",
       }
     });
 
@@ -183,10 +282,40 @@ export default function App() {
   }, [currentPass]);
 
   useEffect(() => {
+    majReponseIA(reponseIA.liste_llO0, reponseIA.liste_explicationO0, reponseIA.liste_diffsO0)
+  }, []) // ← s'exécute une seule fois après que tous les composants sont montés
 
-    if (Array.isArray(reponseIA)) {
+  //met à jour la langue dans les éléments de index.html
+  useEffect(() => {
+    const h = document.getElementById('app-header');
+    const title = document.getElementById('app-title');
+    if (h) h.textContent = t('title');
+    if (title) title.textContent = t('app-title');
+  }, [t, i18n.language]);
+
+
+
+  function majReponseIA(listeLL, listeExplications, listeDiffs) {
+    const isResponseObject = reponseIA && typeof reponseIA === 'object' && listeLL;
+
+    let listePass;
+    switch (niveau_optimisation) {
+      case 0:
+        listePass = reponseIA.liste_passesO0
+        break;
+      case 1:
+        listePass = reponseIA.liste_passesO1
+        break;
+      case 2:
+        listePass = reponseIA.liste_passesO2
+        break;
+      case 3:
+        listePass = reponseIA.liste_passesO3
+        break;
+    }
+
+    if (isResponseObject) {
       setMessage('');
-      console.log(reponseIA);//TODO: Supprimer, c'est pour voir qu'on a les bons pass Diff et le IR au début
       var code = "";
       var h = 150; //hue
       var lesCouleursOutput = [];
@@ -196,7 +325,7 @@ export default function App() {
       var numLigneIR = 1;
       var numLigneC = 1;
       //création du bloc de code et de la liste des couleurs pour chaque ligne de l'outputEditor et de l'inputEditor
-      for (let bloc of reponseIA[2]) {
+      for (let bloc of listeLL) {
         const couleur = `hsla(${h} 65 65 / 40%)`;
         tabNumLignesCodeIR.push([]); //on ajoute un bloc de code IR
         tabNumLignesCodeC.push([numLigneC++]);
@@ -219,7 +348,7 @@ export default function App() {
         effects: outputHighlighterCompartment.reconfigure(
           createLineHoverHighlighter(
             lesCouleursOutput,
-            reponseIA[1],
+            listeExplications,
             tabNumLignesCodeC,
             tabNumLignesCodeIR,
             setExplications,
@@ -233,7 +362,7 @@ export default function App() {
         effects: inputHighlighterCompartment.reconfigure(
           createLineHoverHighlighter(
             lesCouleursInput,
-            reponseIA[1],
+            listeExplications,
             tabNumLignesCodeC,
             tabNumLignesCodeIR,
             setExplications,
@@ -243,23 +372,35 @@ export default function App() {
         )
       });
       previousPass.current.dispatch({
+        changes: {
+          from: 0,
+          to: previousPass.current.state.doc.length,
+          insert: listePass[currentPass] ?? "",
+        },
         effects: previousPassHighlighterCompartment.reconfigure(
           createLineDiffHiglighter(
             'previous',
-            reponseIA[4])
+            listeDiffs)
         )
       });
       nextPass.current.dispatch({
+        changes: {
+          from: 0,
+          to: nextPass.current.state.doc.length,
+          insert: listePass[currentPass + 1] ?? "",
+        },
         effects: nextPassHighlighterCompartment.reconfigure(
           createLineDiffHiglighter(
             'next',
-            reponseIA[4])
+            listeDiffs)
         )
       })
     } else {
-      setMessage(reponseIA);
+      setMessage(typeof reponseIA === 'string' ? reponseIA : JSON.stringify(reponseIA, null, 2));
     }
-  }, [reponseIA])
+    setCurrentPass(0);
+    setNbPasses(reponseIA["liste_passesO" + niveau_optimisation].length - 1);
+  };
 
 
   const handleValidate = async () => {
@@ -279,22 +420,39 @@ export default function App() {
           var codeIR = donnees["liste_ll"].map((elem) => elem.join("\n"));
           codeIR = codeIR.join("\n");
           donnees["liste_passes"].unshift(codeIR);
-          setReponseIA([donnees["liste_c"], donnees["liste_explication"], donnees["liste_ll"], donnees["liste_passes"], donnees["liste_diffs"]]);
+          reponseIA = { liste_c: donnees["liste_c"], liste_explicationO0: donnees["liste_explication"], liste_llO0: donnees["liste_ll"], liste_passesO0: donnees["liste_passes"], liste_diffsO0: donnees["liste_diffs"] };
         } else {
-          setReponseIA("Erreur du serveur : " + donnees.message);
+          reponseIA = "Erreur du serveur : " + donnees.message;
         }
       } catch (erreurParse) {
         // 4. Si la transformation plante (ce n'est pas du JSON), on affiche l'erreur brute
-        setReponseIA("Erreur inattendue (Nginx ou plantage Flask) :\n\n" + texteBrut)
+        reponseIA = "Erreur inattendue (Nginx ou plantage Flask) :\n\n" + texteBrut;
       }
     } catch (error) {
-      setReponseIA('Erreur de réseau ou serveur injoignable : ' + error.message)
+      reponseIA = 'Erreur de réseau ou serveur injoignable : ' + error.message;
     }
+    majReponseIA(reponseIA.liste_llO0, reponseIA.liste_explicationO0, reponseIA.liste_diffsO0)
   }
 
   function handleNavigation(direction) {
+    let longueurListePass;
+    switch (niveau_optimisation) {
+      case 0:
+        longueurListePass = reponseIA.liste_passesO0.length
+        break;
+      case 1:
+        longueurListePass = reponseIA.liste_passesO1.length
+        break;
+      case 2:
+        longueurListePass = reponseIA.liste_passesO2.length
+        break;
+      case 3:
+        longueurListePass = reponseIA.liste_passesO3.length
+        break;
+    }
+
     const nextPassIndex = direction === "next"
-      ? (currentPass === reponseIA[3].length - 2 ? reponseIA[3].length - 2 : currentPass + 1)
+      ? (currentPass === longueurListePass - 2 ? longueurListePass - 2 : currentPass + 1)
       : (currentPass === 0 ? 0 : currentPass - 1);
     setCurrentPass(nextPassIndex);
 
@@ -337,44 +495,68 @@ export default function App() {
 
   return (
     <>
+      <div className="language-selector">
+        <label htmlFor="language-select">Langue :</label>
+        <select id="language-select" value={language} onChange={handleLanguageChange}>
+          <option value="fr">Français</option>
+          <option value="en">English</option>
+          <option value="es">Español</option>
+        </select>
+      </div>
       <div className="flex-container">
         <Editor
           editorRef={inputRef}
           doc={"int main() {\n    printf(\"Hello, world!\\n\");\n    return 0;\n}"}
           extensions={inputExtensions}
-          langage="code en C"
+          langage={t("C_code")}
         />
         <Editor
           editorRef={outputRef}
           extensions={outputExtensions}
-          langage="code en IR"
+          langage={t("IR_code")}
         />
       </div>
       <div>
-        <button className="btnValider" onClick={handleValidate}>Valider</button>
+        <button onClick={() => { niveau_optimisation = 0; majReponseIA(reponseIA.liste_llO0, reponseIA.liste_explicationO0, reponseIA.liste_diffsO0) }}>O0</button>
+        <button onClick={() => { niveau_optimisation = 1; majReponseIA(reponseIA.liste_llO1, reponseIA.liste_explicationO1, reponseIA.liste_diffsO1) }}>O1</button>
+        <button onClick={() => { niveau_optimisation = 2; majReponseIA(reponseIA.liste_llO2, reponseIA.liste_explicationO2, reponseIA.liste_diffsO2) }}>O2</button>
+        <button onClick={() => { niveau_optimisation = 3; majReponseIA(reponseIA.liste_llO3, reponseIA.liste_explicationO3, reponseIA.liste_diffsO3) }}>O3</button>
+        <button className="btnValider" onClick={handleValidate}>{t('submit')}</button>
         <p>{message}</p>
       </div>
 
       <div className="explications">{explications}</div>
 
       <div className="flex-container">
-        <button className="btnNavigation" onClick={() => handleNavigation("previous")}>previous</button>
-        <div><h2>pass {`${currentPass + 1} / ${reponseIA[3].length - 1} : ${reponseIA[3][currentPass + 1].match(/^\s*\*\*\* IR Dump After .* \*\*\*:?$/m)?.[0]} `}</h2></div>
+        <button className="btnNavigation" onClick={() => handleNavigation("previous") }>previous</button>
+        <div><h2>pass {`${currentPass + 1} / ${nbPasses} : ${reponseIA["liste_passesO" + niveau_optimisation][currentPass + 1].match(/^\s*\*\*\* IR Dump After .* \*\*\*:?$/m)?.[0]} `}</h2></div>
         <button className="btnNavigation" onClick={() => handleNavigation("next")}>next</button>
       </div>
       <div className="flex-container">
         <Editor
           editorRef={previousPass}
           extensions={previousPassExtensions}
-          langage={`code version n° ${currentPass + 1}`}
+          langage={t('code_version')+` ${currentPass + 1}`}
         />
         <Editor
           editorRef={nextPass}
           extensions={nextPassExtensions}
-          langage={`code version n° ${currentPass + 2}`}
+          langage={t('code_version')+` ${currentPass + 2}`}
         />
       </div>
 
+      <script>
+        {
+          document.onkeydown = (e) => {
+            e = e || window.event;
+            if (e.keyCode === 37) {
+              handleNavigation("previous")
+            } else if (e.keyCode === 39) {
+              handleNavigation("next")
+            }
+          }
+        }
+      </script>
     </>
   )
 }

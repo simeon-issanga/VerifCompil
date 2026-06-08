@@ -182,7 +182,7 @@ def compile_code():
             }
         else :
             reponse = client.chat.completions.create(
-                model="llama3",
+                model="qwen2.5-coder:7b",
                 messages=[
                     {"role": "system", "content": prompt_sys},
                     {"role": "user", "content": f"Voici le code C :\n{code_c}\nVoici le code LLVM IR :\n{llvm_ir}"}

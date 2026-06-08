@@ -44,5 +44,4 @@ jobs:
         run: |
           docker compose up --build -d web nginx-proxy
 
-      - name: Nettoyage des vieilles images
-        run: docker image prune -f
+      
