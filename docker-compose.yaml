@@ -2,21 +2,23 @@ version: '3.8'
 
 services:
   ollama:
-    ollama:
-      image: ollama/ollama:latest
-      container_name: ollama-verif
-      volumes:
-        - ollama_data:/root/.ollama
-      networks:
-        - verif_compil
-      # rappel futur : ne jamais exposé ses types de ports car gpu peut être utilisé 
-      deploy:
-        resources:
-          reservations:
-            devices:
-              - driver: nvidia
-                count: 1
-                capabilities: [gpu]
+    image: ollama/ollama:latest
+    container_name: ollama-verif
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - verif_compil
+    # rappel futur : ne jamais exposé ses types de ports car gpu peut être utilisé 
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
   # frontend (React.js propulse par Node)
   web:
