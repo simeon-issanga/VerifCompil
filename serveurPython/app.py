@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify
 import subprocess
-from openai import OpenAI
 from pathlib import Path
 import os
 import json
@@ -9,10 +8,8 @@ import ollama
 
 app = Flask(__name__)
 
-client = OpenAI(
-    api_key=os.environ.get("API_KEY_DEEPSEEK"),
-    base_url="http://ollama:11434/v1"
-)
+client = ollama.Client(host='http://ollama:11434')
+
 
 
 def transformer_en_liste(dossier_path):
@@ -68,14 +65,13 @@ def avoir_passe(file_c, uid):
                     f_diff.write(diff_file)
 
             vieuxFichiers = pass_file
-        return [transformer_en_liste(pass_dir), transformer_en_liste(diff_dir), pass_dir, diff_dir]
+        return [transformer_en_liste(pass_dir), transformer_en_liste(diff_dir)]
                
     except Exception as e:
-        return [[f"Erreur passes : {str(e)}"], [], None, None]
+        return [[f"Erreur passes : {str(e)}"], []]
     finally:       
-        if os.path.exists(pass_dir):
-            for f in Path(pass_dir).glob("*.ll"):
-                f.unlink()
+       if os.path.exists(pass_dir):
+            for f in Path(pass_dir).glob("*.ll"): f.unlink()
             os.rmdir(pass_dir)
 
 
@@ -88,6 +84,7 @@ def compile_code():
     fileTemp = f"file_temp_{uid}.ll"
     liste_passes = []
     liste_diffs = []
+
     try:
         donnes = request.get_json()
         code_c = donnes.get('code', '')
@@ -99,9 +96,7 @@ def compile_code():
         with open(file_path, "w") as file:
             file.write(code_c)
 
-        result_fct = avoir_passe(file_path, uid)
-        liste_passes = result_fct[0]
-        liste_diffs = result_fct[1]
+        liste_passes, liste_diffs = avoir_passe(file_path, uid)
 
         commande_bash = ["clang", file_path, "-emit-llvm", "-S", "-c", "-o", output_path]
         resultat_terminal = subprocess.run(commande_bash, capture_output=True, text=True, timeout=10)
@@ -123,65 +118,39 @@ def compile_code():
         liste_diffs.insert(0, resultTemp)
 
         #  Requête à l'IA
-        prompt_sys = """
-        Tu es un expert en infrastructure LLVM et en compilation C. 
-        Ton rôle est de créer une cartographie précise entre le code source C et le code LLVM IR généré.
-
-        RÈGLES CRUCIALES POUR LE FORMAT JSON :
-        1. Tu dois renvoyer UN OBJET JSON UNIQUE contenant trois listes : "liste_c", "liste_ll", "liste_explication".
-        2. Ces trois listes DOIVENT avoir exactement la même longueur (N éléments).
-        3. L'élément i de "liste_c" doit correspondre exactement aux éléments i de "liste_ll" et "liste_explication".
-
-        STRATÉGIE DE MAPPAGE :
-        - "liste_c" : Doit contenir le code C ligne par ligne, sans aucune modification.
-        - "liste_ll" : Pour chaque ligne de C, regroupe TOUTES les instructions LLVM IR correspondantes dans une seule chaîne de caractères (utilise \\n pour séparer les instructions IR dans cette chaîne). 
-        - Si une ligne C ne produit pas d'IR (comme une accolade seule '{' ou un commentaire), mets une chaîne vide "" dans "liste_ll".
-        - "liste_explication" : Donne une explication technique concise de ce que fait ce bloc IR spécifique.
-
-        EXEMPLE DE STRUCTURE ATTENDUE :
-        {
-        "liste_c": ["int a = 5;", "return a;"],
-        "liste_ll": [["%1 = alloca i32\\nstore i32 5,] [i32* %1"]], ["%2 = load i32, i32* %1\\nret i32 %2"],
-        "liste_explication": ["Allocation et stockage de la constante 5.", "Chargement de la variable et instruction de retour."]
-        }
-
-        Réponds uniquement en JSON valide, sans texte avant ou après.
-        """
+        prompt_sys = """Tu es un expert LLVM. Réponds UNIQUEMENT avec un objet JSON contenant :
+        "liste_c": [chaque ligne du code C],
+        "liste_ll": [instructions IR correspondantes regroupées par ligne C],
+        "liste_explication": [explications courtes].
+        Les 3 listes doivent avoir la même taille."""
 
    
-        if os.environ.get("API_KEY_DEEPSEEK") == "fake_key_for_ci":
-            donnees_ia = {
-                "liste_c": ["/* Mode Test */"],
-                "liste_ll": [["; IR généré"]],
-                "liste_explication": ["Test réussi sans IA"],
-                "liste_passes": ["passes"],
-                "liste_diffs": ["diff"]
+        #if os.environ.get("API_KEY_DEEPSEEK") == "fake_key_for_ci":
+        #    donnees_ia = {
+        #        "liste_c": ["/* Mode Test */"],
+        #        "liste_ll": [["; IR généré"]],
+        #        "liste_explication": ["Test réussi sans IA"],
+        #        "liste_passes": ["passes"],
+        #        "liste_diffs": ["diff"]
+        #    }
+        #else :
+        reponse = client.chat(
+            model="qwen2.5-coder:7b",
+            messages=[
+                {"role": "system", "content": prompt_sys},
+                {"role": "user", "content": f"Voici le code C :\n{code_c}\nVoici le code LLVM IR :\n{llvm_ir}"}
+            ],
+            options={
+                "temperature": 0.2,
+                "num_ctx": 8000  # équivalent de max_tokens
             }
-        else :
-            reponse = client.chat(
-                model="qwen2.5-coder:7b",
-                messages=[
-                    {"role": "system", "content": prompt_sys},
-                    {"role": "user", "content": f"Voici le code C :\n{code_c}\nVoici le code LLVM IR :\n{llvm_ir}"}
-                ],
-                options={
-                    "temperature": 0.2,
-                    "num_ctx": 8000  # équivalent de max_tokens
-                }
-            )
-            
-            content = reponse.choices[0].message.content
-            
-            if content.startswith("```json"):
-                content = content.replace("```json", "", 1).replace("```", "", 1).strip()
-            elif content.startswith("```"):
-                content = content.replace("```", "", 1).replace("```", "", 1).strip()
+        )
+        
+        content = reponse['message']['content']
+        clean_json = content.replace("```json", "").replace("```", "").strip()
 
-            donnees_ia = json.loads(content)
-
-            donnees_ia = json.loads(content)
-            # JSON pour transmettr les données
-            donnees_ia = json.loads(reponse.choices[0].message.content)
+        # JSON pour transmettr les données
+        donnees_ia = json.loads(clean_json)
         
         return jsonify({
             "status": "success", 
@@ -196,9 +165,8 @@ def compile_code():
         return jsonify({"status": "error", "message": str(e)}), 500
 
     finally:
-        if os.path.exists(file_path): os.remove(file_path)
-        if os.path.exists(output_path): os.remove(output_path)
-        if os.path.exists(fileTemp): os.remove(fileTemp)
+        for f in [file_path, output_path, fileTemp]:
+            if os.path.exists(f): os.remove(f)
 
 
 
