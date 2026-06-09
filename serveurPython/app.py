@@ -123,52 +123,28 @@ def compile_code():
 
         #  Requête à l'IA
         prompt_sys = """
-        Tu es un compilateur expert. Ton objectif est de faire correspondre les lignes de code C avec les blocs LLVM IR correspondants.
-        
-        RÈGLE ABSOLUE : Tu dois obligatoirement renvoyer un objet JSON valide et rien d'autre.
-        
-        CONTRAINTES DE FORMAT :
-        1. Le JSON doit contenir exactement 3 clés : "liste_c", "liste_ll", "liste_explication".
-        2. Les trois listes doivent avoir exactement la même taille (le même nombre d'éléments).
-        3. L'index [i] de "liste_c" doit correspondre à l'index [i] de "liste_ll" et de "liste_explication".
-        4. Si une instruction C correspond à plusieurs instructions LLVM IR, "liste_ll[i]" doit être une liste de listes (tableau imbriqué).
-        
-        VOICI LE FORMAT JSON ATTENDU :
+        Tu es un expert en infrastructure LLVM et en compilation C. 
+        Ton rôle est de créer une cartographie précise entre le code source C et le code LLVM IR généré.
+
+        RÈGLES CRUCIALES POUR LE FORMAT JSON :
+        1. Tu dois renvoyer UN OBJET JSON UNIQUE contenant trois listes : "liste_c", "liste_ll", "liste_explication".
+        2. Ces trois listes DOIVENT avoir exactement la même longueur (N éléments).
+        3. L'élément i de "liste_c" doit correspondre exactement aux éléments i de "liste_ll" et "liste_explication".
+
+        STRATÉGIE DE MAPPAGE :
+        - "liste_c" : Doit contenir le code C ligne par ligne, sans aucune modification.
+        - "liste_ll" : Pour chaque ligne de C, regroupe TOUTES les instructions LLVM IR correspondantes dans une seule chaîne de caractères (utilise \\n pour séparer les instructions IR dans cette chaîne). 
+        - Si une ligne C ne produit pas d'IR (comme une accolade seule '{' ou un commentaire), mets une chaîne vide "" dans "liste_ll".
+        - "liste_explication" : Donne une explication technique concise de ce que fait ce bloc IR spécifique.
+
+        EXEMPLE DE STRUCTURE ATTENDUE :
         {
-            "liste_c": [
-                "fichier.c",
-                "",
-                "",
-                "int a = 5;",
-                "return 0;",
-                "",
-                "",
-                ""
-            ],
-            "liste_ll": [
-                ["source_filename = 'fichier.c'"],
-                ["target datalayout = 'e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-n32:64-S128-Fn32'"],
-                ["target triple = 'arm64-apple-macosx26.0.0'"],
-                ["%1 = alloca i32\\nstore i32 5, i32* %1"],
-                ["ret i32 0"],
-                ["attributes #0 = { noinline nounwind optnone ssp uwtable \"frame-pointer\"=\"all\" }"],
-                ["!llvm.ident = !{!5}"],
-                ["!0 = !{i32 1, !"wchar_size", i32 4}"]
-            ],
-            "liste_explication": [
-                "Correspond au nom de fichier",
-                "Configuration du datalayout : e indique une représentation little-endian, S128 garantit un alignement sur 128 bits, et Fn32 exige un alignement des pointeurs de fonction sur 32 bits.",
-                "Machine cible du programme",
-                "Cette ligne alloca de la mémoire pour une variable entière et stocke la valeur 5 dedans.",
-                "Cette ligne retourne la valeur 0 pour indiquer que le programme s'est terminé avec succès."
-                "Définit comment les fonctions doivent être compilées (ex: pas d'optimisation, gestion de la pile)",
-                "Indique quel compilateur a généré ce fichier",
-                "Précise des constantes système, comme ici la taille de 4 octets pour les caractères larges (wchar_t)"
-            ]
+        "liste_c": ["int a = 5;", "return a;"],
+        "liste_ll": ["%1 = alloca i32\\nstore i32 5, i32* %1", "%2 = load i32, i32* %1\\nret i32 %2"],
+        "liste_explication": ["Allocation et stockage de la constante 5.", "Chargement de la variable et instruction de retour."]
         }
-        IMPORTANT : 
-            Échappe tous les guillemets doubles à l'intérieur des chaînes de caractères avec \\\".
-            Explique bien chaque métadonnées au début.
+
+        Réponds uniquement en JSON valide, sans texte avant ou après.
         """
 
    
