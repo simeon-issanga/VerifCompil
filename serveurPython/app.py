@@ -140,7 +140,7 @@ def compile_code():
         EXEMPLE DE STRUCTURE ATTENDUE :
         {
         "liste_c": ["int a = 5;", "return a;"],
-        "liste_ll": ["%1 = alloca i32\\nstore i32 5, i32* %1", "%2 = load i32, i32* %1\\nret i32 %2"],
+        "liste_ll": [["%1 = alloca i32\\nstore i32 5,] [i32* %1"]], ["%2 = load i32, i32* %1\\nret i32 %2"],
         "liste_explication": ["Allocation et stockage de la constante 5.", "Chargement de la variable et instruction de retour."]
         }
 
