@@ -7,6 +7,12 @@ Thumbs.db
 *.swp
 *.swo
 
+# Pour l'IA
+
+ollama_storage/
+ollama_data/
+*.tar.gz
+*.tar
 
 # Fichiers générés par Python
 __pycache__/

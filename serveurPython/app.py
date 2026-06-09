@@ -103,7 +103,7 @@ def compile_code():
         liste_diffs = result_fct[1]
 
         commande_bash = ["clang", file_path, "-emit-llvm", "-S", "-c", "-o", output_path]
-        resultat_terminal = subprocess.run(commande_bash, capture_output=True, text=True, timeout=15)
+        resultat_terminal = subprocess.run(commande_bash, capture_output=True, text=True, timeout=10)
 
         if resultat_terminal.returncode != 0:
             return jsonify({
@@ -189,9 +189,18 @@ def compile_code():
                 ],
                 temperature=0.2,
                 max_tokens=8000,
-                #response_format={"type": "json_object"}
+                response_format={"type": "json_object"}
             )
+            content = reponse.choices[0].message.content
             
+            if content.startswith("```json"):
+                content = content.replace("```json", "", 1).replace("```", "", 1).strip()
+            elif content.startswith("```"):
+                content = content.replace("```", "", 1).replace("```", "", 1).strip()
+
+            donnees_ia = json.loads(content)
+
+            donnees_ia = json.loads(content)
             # JSON pour transmettr les données
             donnees_ia = json.loads(reponse.choices[0].message.content)
         

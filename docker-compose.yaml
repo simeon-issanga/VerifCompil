@@ -1,14 +1,11 @@
-version: '3.8'
+
 
 services:
   ollama:
     image: ollama/ollama:latest
     container_name: ollama-verif
-    dns:
-      - 8.8.8.8
-      - 1.1.1.1
     volumes:
-      - ollama_data:/root/.ollama
+      - ./ollama_data:/root/.ollama
     networks:
       - verif_compil
     # rappel futur : ne jamais exposé ses types de ports car gpu peut être utilisé 
@@ -26,9 +23,7 @@ services:
     container_name: serveur-verif_compil
     env_file:
       - config/env/.env
-    
     volumes:
-
       - ./site/:/app
       - /app/node_modules
     depends_on:
@@ -65,9 +60,6 @@ services:
       - pythonserver
     networks:
       - verif_compil
-
-volumes:
-  ollama_data:
 
 networks:
   verif_compil:
