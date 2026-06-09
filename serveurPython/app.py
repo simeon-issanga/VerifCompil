@@ -5,6 +5,7 @@ from pathlib import Path
 import os
 import json
 import uuid
+import ollama
 
 app = Flask(__name__)
 
@@ -157,16 +158,18 @@ def compile_code():
                 "liste_diffs": ["diff"]
             }
         else :
-            reponse = client.chat.completions.create(
+            reponse = client.chat(
                 model="qwen2.5-coder:7b",
                 messages=[
                     {"role": "system", "content": prompt_sys},
                     {"role": "user", "content": f"Voici le code C :\n{code_c}\nVoici le code LLVM IR :\n{llvm_ir}"}
                 ],
-                temperature=0.2,
-                max_tokens=8000,
-                response_format={"type": "json_object"}
+                options={
+                    "temperature": 0.2,
+                    "num_ctx": 8000  # équivalent de max_tokens
+                }
             )
+            
             content = reponse.choices[0].message.content
             
             if content.startswith("```json"):
