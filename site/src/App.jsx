@@ -420,7 +420,25 @@ export default function App() {
           var codeIR = donnees["liste_ll"].map((elem) => elem.join("\n"));
           codeIR = codeIR.join("\n");
           donnees["liste_passes"].unshift(codeIR);
-          reponseIA = { liste_c: donnees["liste_c"], liste_explicationO0: donnees["liste_explication"], liste_llO0: donnees["liste_ll"], liste_passesO0: donnees["liste_passes"], liste_diffsO0: donnees["liste_diffs"] };
+          reponseIA = {
+            liste_c: donnees["liste_c"],
+            liste_explicationO0: donnees["00"]["liste_explication"],
+            liste_llO0: donnees["00"]["liste_ll"],
+            liste_passesO0: donnees["00"]["liste_passes"],
+            liste_diffsO0: donnees["00"]["liste_diffs"],
+            liste_explicationO1: donnees["01"]["liste_explication"],
+            liste_llO1: donnees["01"]["liste_ll"],
+            liste_passesO1: donnees["01"]["liste_passes"],
+            liste_diffsO1: donnees["01"]["liste_diffs"],
+            liste_explicationO2: donnees["02"]["liste_explication"],
+            liste_llO2: donnees["02"]["liste_ll"],
+            liste_passesO2: donnees["02"]["liste_passes"],
+            liste_diffsO2: donnees["02"]["liste_diffs"],
+            liste_explicationO3: donnees["03"]["liste_explication"],
+            liste_llO3: donnees["03"]["liste_ll"],
+            liste_passesO3: donnees["03"]["liste_passes"],
+            liste_diffsO3: donnees["03"]["liste_diffs"],
+          };
         } else {
           reponseIA = "Erreur du serveur : " + donnees.message;
         }

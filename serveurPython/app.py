@@ -183,23 +183,23 @@ def compile_code():
                 "liste_diffs": diffs0
             }
             "01" : {
-                "liste_llO1": llvm1,
-                "liste_explicationO1" : [""],
-                "liste_passesO1": passes1,
-                "liste_diffsO1": diffs1
+                "liste_ll": llvm1,
+                "liste_explication" : [""],
+                "liste_passes": passes1,
+                "liste_diffs": diffs1
             }
 
             "02" : {
-                "liste_llO2": llvm2,
-                "liste_explicationO2": [""],
-                "liste_passesO2": passes2,
-                "liste_diffsO2": diffs2
+                "liste_ll": llvm2,
+                "liste_explication": [""],
+                "liste_passes": passes2,
+                "liste_diffs": diffs2
             }
             "03" : {
-                "liste_llO3": llvm3,
-                "liste_explicationO3": [""],
-                "liste_passesO3": passes3,
-                "liste_diffsO3": diffs3
+                "liste_ll": llvm3,
+                "liste_explication": [""],
+                "liste_passes": passes3,
+                "liste_diffs": diffs3
             }
         })
 
