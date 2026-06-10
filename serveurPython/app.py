@@ -27,14 +27,19 @@ def genererLLVM(file_c, uid, opt):
         commande_bash = ["clang", file_c, "-emit-llvm", "-S", "-c", "-o", file_ll]
         res = executer(commande_bash)
     else : 
-        commande_bash = ["clang", f"-O{opt}", "-disable-llvm-passes", "-emit-llvm", "-S", "-o", file_ll]
+        commande_bash = ["clang", file_c, f"-O{opt}", "-emit-llvm", "-S", "-o", file_ll]
         res = executer(commande_bash)
     
-    if res.returncode == 0:
+    if res and hasattr(res, 'returncode') and res.returncode != 0:
+        print(f"ERREUR CLANG O{opt} : {res.stderr}")
+        return "", None
+
+    if res and hasattr(res, 'returncode') and res.returncode == 0:
         if os.path.exists(file_ll):
             with open(file_ll, "r") as f:
                 return f.read(), file_ll
-    return None, None # à revoire
+                
+    return "", None
 
 
 def difference_entre_passes(file1, file2):
@@ -47,7 +52,7 @@ def difference_entre_passes(file1, file2):
         return f"Erreur diff : {str(e)}"
 
 
-def genererPassesDif(file_c, uid, opt):
+def genererPasses(file_c, uid, opt):
     pass_dir = f"passes_{uid}_O{opt}"
     os.makedirs(pass_dir, exist_ok=True)
     
@@ -102,23 +107,23 @@ def compile_code():
             file.write(code_c)
 
        #0
-        llvm0, path0 = genererLLVM(file_c, uid, 0)
-        passes0, diffs0 = genererPassesDif(file_c, uid, 0)
+        llvm0, path0 = genererLLVM(file_path, uid, 0)
+        passes0, diffs0 = genererPasses(file_path, uid, 0)
         fichSupp.append(path0)
 
         #1
-        llvm1, path1 = genererLLVM(file_c, uid, 1)
-        passes1, diffs1 = genererPassesDif(file_c, uid, 1)
+        llvm1, path1 = genererLLVM(file_path, uid, 1)
+        passes1, diffs1 = genererPasses(file_path, uid, 1)
         fichSupp.append(path1)
 
         #2
-        llvm2, path2 = genererLLVM(file_c, uid, 2)
-        passes2, diffs2 = genererPassesDif(file_c, uid, 2)
+        llvm2, path2 = genererLLVM(file_path, uid, 2)
+        passes2, diffs2 = genererPasses(file_path, uid, 2)
         fichSupp.append(path2)
 
         #3
-        llvm3, path3 = genererLLVM(file_c, uid, 3)
-        passes3, diffs3 = genererPassesDif(file_c, uid, 3)
+        llvm3, path3 = genererLLVM(file_path, uid, 3)
+        passes3, diffs3 = genererPasses(file_path, uid, 3)
         fichSupp.append(path3)
 
 
@@ -152,6 +157,12 @@ def compile_code():
                     ["Début de la fonction principale"]
                 ]
             }
+
+            CONSIGNES DE SÉCURITÉ JSON :
+                - Chaque chaîne de caractères doit être sur une SEULE ligne (pas de vrais retours à la ligne).
+                - TRÈS IMPORTANT : Tous les guillemets doubles à l'intérieur des instructions LLVM doivent être échappés avec un triple backslash pour le JSON (ex: \\\" ).
+                - N'inclus jamais de texte ou d'explications en dehors de l'objet JSON.
+                
         """
 
         reponse = client.chat(
@@ -161,7 +172,7 @@ def compile_code():
                 {"role": "user", "content": f"Voici le code C :\n{code_c}\nVoici le code LLVM IR :\n{llvm0}"}
             ],
             options={
-                "temperature": 0.2,
+                "temperature": 0.1,
                 "num_ctx": 8000  
             }
         )
@@ -175,31 +186,32 @@ def compile_code():
         return jsonify({
             "status": "success", 
             "liste_c": donnees_ia.get("liste_c", []),
-            
-            "00": {
-                "liste_ll": donnees_ia.get("liste_ll", []),
-                "liste_explication": donnees_ia.get("liste_explication", []),
-                "liste_passes": passes0,
-                "liste_diffs": diffs0
-            }
-            "01" : {
-                "liste_ll": llvm1,
-                "liste_explication" : [""],
-                "liste_passes": passes1,
-                "liste_diffs": diffs1
-            }
-
-            "02" : {
-                "liste_ll": llvm2,
-                "liste_explication": [""],
-                "liste_passes": passes2,
-                "liste_diffs": diffs2
-            }
-            "03" : {
-                "liste_ll": llvm3,
-                "liste_explication": [""],
-                "liste_passes": passes3,
-                "liste_diffs": diffs3
+            "optimisations" :{
+                "00": 
+                {
+                    "liste_ll": donnees_ia.get("liste_ll", []),
+                    "liste_explication": donnees_ia.get("liste_explication", []),
+                    "liste_passes": passes0,
+                    "liste_diffs": diffs0
+                },
+                "01" : {
+                    "liste_ll": [[line] for line in llvm1.split('\n')] if llvm1 else [],
+                    "liste_explication" : [""],
+                    "liste_passes": passes1,
+                    "liste_diffs": diffs1
+                },
+                "02" : {
+                    "liste_ll": [[line] for line in llvm2.split('\n')] if llvm2 else [],
+                    "liste_explication": [""],
+                    "liste_passes": passes2,
+                    "liste_diffs": diffs2
+                },
+                "03" : {
+                    "liste_ll": [[line] for line in llvm3.split('\n')] if llvm3 else [],
+                    "liste_explication": [""],
+                    "liste_passes": passes3,
+                    "liste_diffs": diffs3
+                }
             }
         })
 

@@ -415,36 +415,47 @@ export default function App() {
       const texteBrut = await reponse.text()
 
       try {
+        console.log("0");
         const donnees = JSON.parse(texteBrut)
+        console.log("1");
         if (donnees.status === 'success') {
-          var codeIR = donnees["liste_ll"].map((elem) => elem.join("\n"));
-          codeIR = codeIR.join("\n");
-          donnees["liste_passes"].unshift(codeIR);
+          for (let niveau of ["00", "01", "02", "03"]) {
+            console.log("2", niveau);
+            var codeIR = donnees["optimisations"][niveau]["liste_ll"].map((elem) => elem.join("\n"));
+            console.log("3");
+            codeIR = codeIR.join("\n");
+            console.log("4");
+            donnees["optimisations"][niveau]["liste_passes"].unshift(codeIR);
+            console.log("5");
+          }
+          console.log(donnees);
           reponseIA = {
             liste_c: donnees["liste_c"],
-            liste_explicationO0: donnees["00"]["liste_explication"],
-            liste_llO0: donnees["00"]["liste_ll"],
-            liste_passesO0: donnees["00"]["liste_passes"],
-            liste_diffsO0: donnees["00"]["liste_diffs"],
-            liste_explicationO1: donnees["01"]["liste_explication"],
-            liste_llO1: donnees["01"]["liste_ll"],
-            liste_passesO1: donnees["01"]["liste_passes"],
-            liste_diffsO1: donnees["01"]["liste_diffs"],
-            liste_explicationO2: donnees["02"]["liste_explication"],
-            liste_llO2: donnees["02"]["liste_ll"],
-            liste_passesO2: donnees["02"]["liste_passes"],
-            liste_diffsO2: donnees["02"]["liste_diffs"],
-            liste_explicationO3: donnees["03"]["liste_explication"],
-            liste_llO3: donnees["03"]["liste_ll"],
-            liste_passesO3: donnees["03"]["liste_passes"],
-            liste_diffsO3: donnees["03"]["liste_diffs"],
+            liste_explicationO0: donnees["optimisations"]["00"]["liste_explication"],
+            liste_llO0: donnees["optimisations"]["00"]["liste_ll"],
+            liste_passesO0: donnees["optimisations"]["00"]["liste_passes"],
+            liste_diffsO0: donnees["optimisations"]["00"]["liste_diffs"],
+            liste_explicationO1: donnees["optimisations"]["01"]["liste_explication"],
+            liste_llO1: donnees["optimisations"]["01"]["liste_ll"],
+            liste_passesO1: donnees["optimisations"]["01"]["liste_passes"],
+            liste_diffsO1: donnees["optimisations"]["01"]["liste_diffs"],
+            liste_explicationO2: donnees["optimisations"]["02"]["liste_explication"],
+            liste_llO2: donnees["optimisations"]["02"]["liste_ll"],
+            liste_passesO2: donnees["optimisations"]["02"]["liste_passes"],
+            liste_diffsO2: donnees["optimisations"]["02"]["liste_diffs"],
+            liste_explicationO3: donnees["optimisations"]["03"]["liste_explication"],
+            liste_llO3: donnees["optimisations"]["03"]["liste_ll"],
+            liste_passesO3: donnees["optimisations"]["03"]["liste_passes"],
+            liste_diffsO3: donnees["optimisations"]["03"]["liste_diffs"],
           };
         } else {
           reponseIA = "Erreur du serveur : " + donnees.message;
+          console.log(donnees);
         }
       } catch (erreurParse) {
         // 4. Si la transformation plante (ce n'est pas du JSON), on affiche l'erreur brute
         reponseIA = "Erreur inattendue (Nginx ou plantage Flask) :\n\n" + texteBrut;
+        console.log(texteBrut);
       }
     } catch (error) {
       reponseIA = 'Erreur de réseau ou serveur injoignable : ' + error.message;
