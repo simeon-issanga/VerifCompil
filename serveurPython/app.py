@@ -10,19 +10,32 @@ app = Flask(__name__)
 
 client = ollama.Client(host='http://ollama:11434')
 
+def executer(commande, timeout=15):
+    try:
+        res = subprocess.run(commande, capture_output=True, text=True, timeout=timeout)
+        return res
+    except subprocess.TimeoutExpired:
+        return None
+    except Exception as e:
+        return str(e)
 
+def genererLLVM(file_c, uid, opt):
+    file_ll = f"temp_{uid}_O{opt}.ll"
+    if opt < 0 : 
+        print("erreur opt ne peut pas être négatif ")
+    elif opt == 0 : 
+        commande_bash = ["clang", file_c, "-emit-llvm", "-S", "-c", "-o", file_ll]
+        res = executer(commande_bash)
+    else : 
+        commande_bash = ["clang", f"-O{opt}", "-disable-llvm-passes", "-emit-llvm", "-S", "-o", file_ll]
+        res = executer(commande_bash)
+    
+    if res.returncode == 0:
+        if os.path.exists(file_ll):
+            with open(file_ll, "r") as f:
+                return f.read(), file_ll
+    return None, None # à revoire
 
-def transformer_en_liste(dossier_path):
-    la_liste = []
-    dossier = Path(dossier_path)
-    
-    if not dossier.exists():
-        return la_liste
-    
-    for fichier in sorted(dossier.glob("*")):
-        with open(fichier, 'r', encoding='utf-8') as f:
-            la_liste.append(f.read())
-    return la_liste
 
 def difference_entre_passes(file1, file2):
     commande_diff = ["diff", "-u", file1, file2]
@@ -34,115 +47,122 @@ def difference_entre_passes(file1, file2):
         return f"Erreur diff : {str(e)}"
 
 
-def avoir_passe(file_c, uid):
-    vieuxFichiers = None
-    pass_dir = f"passes_{uid}"
-    diff_dir = f"diffs_{uid}"
+def genererPassesDif(file_c, uid, opt):
+    pass_dir = f"passes_{uid}_O{opt}"
     os.makedirs(pass_dir, exist_ok=True)
-    os.makedirs(diff_dir, exist_ok=True)
-
-    commande_clang = ["clang", "-mllvm", "-print-after-all", file_c, "-c", "-o", "/dev/null"]
     
-    try:
-        res = subprocess.run(commande_clang, capture_output=True, text=True, timeout=15)
-        output_passes = res.stderr
-
-        vieuxFichiers = None
-
-        segments = output_passes.split("*** IR Dump After")
+    commande_bash = ["clang", f"-O{opt}", "-mllvm", "-print-after-all", file_c, "-c", "-o", "/dev/null"]
+    res = executer(commande_bash)
+    
+    listP = []
+    listD = []
+    
+    if res and res.stderr:
+        segments = res.stderr.split("*** IR Dump After")
+        vieux_chemin = None
         
         for i, segment in enumerate(segments[1:], 1):
-            file_name = f"pass_{i:02d}.ll"
-            pass_file = os.path.join(pass_dir, file_name)
+            chemin_actuel = os.path.join(pass_dir, f"pass_{i:02d}.ll")
+            contenu = "*** IR Dump After" + segment
+            
+            with open(chemin_actuel, "w") as f:
+                f.write(contenu)
+            listP.append(contenu)
 
-            with open(pass_file, "w") as f:
-                f.write("*** IR Dump After" + segment)
+            if vieux_chemin:
+                diff_res = subprocess.run(["diff", "-u", vieux_chemin, chemin_actuel], capture_output=True, text=True)
+                listD.append(diff_res.stdout)
+            
+            vieux_chemin = chemin_actuel
 
-            if vieuxFichiers is not None:
-                diff_file = difference_entre_passes(vieuxFichiers, pass_file)    
-                chemFich = os.path.join(diff_dir, f"diff_{i:02d}.txt")
-                with open(chemFich, "w") as f_diff:
-                    f_diff.write(diff_file)
-
-            vieuxFichiers = pass_file
-        return [transformer_en_liste(pass_dir), transformer_en_liste(diff_dir)]
-               
-    except Exception as e:
-        return [[f"Erreur passes : {str(e)}"], []]
-    finally:       
-       if os.path.exists(pass_dir):
-            for f in Path(pass_dir).glob("*.ll"): f.unlink()
-            os.rmdir(pass_dir)
-
+    for f in Path(pass_dir).glob("*.ll"): f.unlink()
+    os.rmdir(pass_dir)
+    
+    return listP, listD
 
 @app.route('/api/compile', methods=['POST'], strict_slashes=False)
 @app.route('/compile', methods=['POST'], strict_slashes=False)
 def compile_code():
     uid = str(uuid.uuid4())
     file_path = f"temp_{uid}.c"
-    output_path = f"temp_{uid}.ll"
+    file_s = f"temp_{uid}.ll"
     fileTemp = f"file_temp_{uid}.ll"
-    liste_passes = []
-    liste_diffs = []
+    fichSupp = []
 
     try:
+
+        ## récup code C
         donnes = request.get_json()
         code_c = donnes.get('code', '')
     
         if not code_c.strip():
             return jsonify({"status": "error", "message": "Le code est vide"})
-
         
         with open(file_path, "w") as file:
             file.write(code_c)
 
-        liste_passes, liste_diffs = avoir_passe(file_path, uid)
+       #0
+        llvm0, path0 = genererLLVM(file_c, uid, 0)
+        passes0, diffs0 = genererPassesDif(file_c, uid, 0)
+        fichSupp.append(path0)
 
-        commande_bash = ["clang", file_path, "-emit-llvm", "-S", "-c", "-o", output_path]
-        resultat_terminal = subprocess.run(commande_bash, capture_output=True, text=True, timeout=10)
+        #1
+        llvm1, path1 = genererLLVM(file_c, uid, 1)
+        passes1, diffs1 = genererPassesDif(file_c, uid, 1)
+        fichSupp.append(path1)
 
-        if resultat_terminal.returncode != 0:
-            return jsonify({
-                "status": "error", 
-                "message": f"Erreur de compilation Clang :\n{resultat_terminal.stderr}"
-            })
+        #2
+        llvm2, path2 = genererLLVM(file_c, uid, 2)
+        passes2, diffs2 = genererPassesDif(file_c, uid, 2)
+        fichSupp.append(path2)
 
-        with open(output_path, "r") as file_ll:
-            llvm_ir = file_ll.read()
+        #3
+        llvm3, path3 = genererLLVM(file_c, uid, 3)
+        passes3, diffs3 = genererPassesDif(file_c, uid, 3)
+        fichSupp.append(path3)
 
-        ## on a zappé le premier passe entre .ll généré 
-        with open(fileTemp, "w") as f_temp:
-            f_temp.write(liste_passes[0])
-
-        resultTemp = difference_entre_passes(output_path, fileTemp)
-        liste_diffs.insert(0, resultTemp)
 
         #  Requête à l'IA
-        prompt_sys = """Tu es un expert LLVM. Réponds UNIQUEMENT avec un objet JSON contenant :
-        "liste_c": [chaque ligne du code C],
-        "liste_ll": [instructions IR correspondantes regroupées par ligne C],
-        "liste_explication": [explications courtes].
-        Les 3 listes doivent avoir la même taille."""
+        prompt_sys = """
+            Tu es un expert en infrastructure LLVM. Ton rôle est de mapper le code C avec le code LLVM IR de manière chirurgicale.
 
-   
-        #if os.environ.get("API_KEY_DEEPSEEK") == "fake_key_for_ci":
-        #    donnees_ia = {
-        #        "liste_c": ["/* Mode Test */"],
-        #        "liste_ll": [["; IR généré"]],
-        #        "liste_explication": ["Test réussi sans IA"],
-        #        "liste_passes": ["passes"],
-        #        "liste_diffs": ["diff"]
-        #    }
-        #else :
+            RÈGLES DE FORMATAGE JSON :
+            1. Tu dois répondre UNIQUEMENT avec un objet JSON valide.
+            2. Le JSON contient 3 listes de même longueur : "liste_c", "liste_ll", "liste_explication".
+
+            STRUCTURE INTERNE :
+            - "liste_c" : [Chaîne] La ligne de code C originale. Si c'est pour des métadonnées globales, utilise "".
+            - "liste_ll" : [[Chaîne]] Une liste de tableaux. Chaque tableau contient les instructions IR liées à la ligne C.
+            - "liste_explication" : [[Chaîne]] Une liste de tableaux. Chaque tableau contient les explications correspondant 1-pour-1 aux instructions de liste_ll.
+
+            RÈGLES D'ALIGNEMENT :
+            - L'instruction liste_ll[i][j] doit avoir son explication à liste_explication[i][j].
+            - Si une ligne C n'a pas d'équivalent IR (ex: une accolade seule), liste_ll[i] et liste_explication[i] doivent être des tableaux vides [].
+            - Les métadonnées de début de fichier (!llvm.module.flags, target triple, etc.) doivent être regroupées à l'index 0 avec une explication pour CHAQUE ligne.
+
+            EXEMPLE TYPE :
+            {
+                "liste_c": ["", "int main() {"],
+                "liste_ll": [
+                    ["target triple = \\"x86_64\\"", "!0 = !{i32 1, !\\"wchar_size\\", i32 4}"],
+                    ["define i32 @main() {"]
+                ],
+                "liste_explication": [
+                    ["Définit l'architecture cible", "Définit la taille du type wchar_t à 4 octets"],
+                    ["Début de la fonction principale"]
+                ]
+            }
+        """
+
         reponse = client.chat(
             model="qwen2.5-coder:7b",
             messages=[
                 {"role": "system", "content": prompt_sys},
-                {"role": "user", "content": f"Voici le code C :\n{code_c}\nVoici le code LLVM IR :\n{llvm_ir}"}
+                {"role": "user", "content": f"Voici le code C :\n{code_c}\nVoici le code LLVM IR :\n{llvm0}"}
             ],
             options={
                 "temperature": 0.2,
-                "num_ctx": 8000  # équivalent de max_tokens
+                "num_ctx": 8000  
             }
         )
         
@@ -155,18 +175,40 @@ def compile_code():
         return jsonify({
             "status": "success", 
             "liste_c": donnees_ia.get("liste_c", []),
-            "liste_ll": donnees_ia.get("liste_ll", []),
-            "liste_explication": donnees_ia.get("liste_explication", []),
-            "liste_passes": liste_passes,
-            "liste_diffs": liste_diffs
+            
+            "00": {
+                "liste_ll": donnees_ia.get("liste_ll", []),
+                "liste_explication": donnees_ia.get("liste_explication", []),
+                "liste_passes": passes0,
+                "liste_diffs": diffs0
+            }
+            "01" : {
+                "liste_llO1": llvm1,
+                "liste_explicationO1" : [""],
+                "liste_passesO1": passes1,
+                "liste_diffsO1": diffs1
+            }
+
+            "02" : {
+                "liste_llO2": llvm2,
+                "liste_explicationO2": [""],
+                "liste_passesO2": passes2,
+                "liste_diffsO2": diffs2
+            }
+            "03" : {
+                "liste_llO3": llvm3,
+                "liste_explicationO3": [""],
+                "liste_passesO3": passes3,
+                "liste_diffsO3": diffs3
+            }
         })
 
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
     finally:
-        for f in [file_path, output_path, fileTemp]:
-            if os.path.exists(f): os.remove(f)
+        for f in fichSupp:
+            if f and os.path.exists(f): os.remove(f)
 
 
 
