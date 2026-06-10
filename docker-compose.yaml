@@ -5,7 +5,7 @@ services:
     image: ollama/ollama:latest
     container_name: ollama-verif
     volumes:
-      - ./ollama_data:/root/.ollama
+      - /home/simeon/VerifCompil/ollama_data:/root/.ollama
     networks:
       - verif_compil
     # rappel futur : ne jamais exposé ses types de ports car gpu peut être utilisé 
