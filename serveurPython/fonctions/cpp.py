@@ -1,0 +1,99 @@
+from fonctions.base import executer, difference_entre_passes
+import os
+from time import perf_counter
+import subprocess
+from pathlib import Path
+#TODO : à revoir éalement 
+
+
+def genererLLVM(file_c, uid, opt):
+    file_ll = f"temp_{uid}_O{opt}.ll"
+    if opt < 0 : 
+        print("erreur opt ne peut pas être négatif ")
+    elif opt == 0 : 
+        commande_bash = ["clang++", file_c, "-emit-llvm", "-S", "-c", "-o", file_ll]
+        res = executer(commande_bash)
+    else : 
+        commande_bash = ["clang++", file_c, f"-O{opt}", "-emit-llvm", "-S", "-o", file_ll]
+        res = executer(commande_bash)
+    
+    if res and hasattr(res, 'returncode') and res.returncode != 0:
+        print(f"ERREUR CLANG++ O{opt} : {res.stderr}")
+        return "", None
+
+    if res and hasattr(res, 'returncode') and res.returncode == 0:
+        if os.path.exists(file_ll):
+            with open(file_ll, "r") as f:
+                return f.read(), file_ll
+                
+    return "", None
+
+
+
+def genererPasses(file_c, uid, opt):
+    pass_dir = f"passes_{uid}_O{opt}"
+    os.makedirs(pass_dir, exist_ok=True)
+    
+    commande_bash = ["clang++", f"-O{opt}", "-mllvm", "-print-after-all", file_c, "-c", "-o", "/dev/null"]
+    res = executer(commande_bash)
+    
+    listP = []
+    listD = []
+    perf = []
+
+    ## passes 00
+    leContenu, cheminC = genererLLVM(file_c, uid, opt)
+    if cheminC:
+        listP.append(leContenu)
+        vieux_chemin = cheminC
+
+    #### suites des passes
+    
+    if res and res.stderr:
+        segments = res.stderr.split("*** IR Dump After")
+        vieux_chemin = None
+        
+        for i, segment in enumerate(segments[1:], 1):
+            chemin_actuel = os.path.join(pass_dir, f"pass_{i:02d}.ll")
+            contenu = "*** IR Dump After" + segment
+            
+            with open(chemin_actuel, "w") as f:
+                f.write(contenu)
+            listP.append(contenu)
+
+            if vieux_chemin:
+                diff_res = difference_entre_passes(vieux_chemin, chemin_actuel)
+                listD.append(diff_res)
+            mesure = mesurePerf(chemin_actuel, f"{uid}_O{opt}_pass_{i:02d}")
+            perf.append(mesure)
+            vieux_chemin = chemin_actuel
+
+    for f in Path(pass_dir).glob("*.ll"): f.unlink()
+    os.rmdir(pass_dir)
+    
+    return listP, listD, perf
+
+
+
+def mesurePerf(file_ll, uid):
+    fichExecuter = f"exe_{uid}" 
+    
+    commande_bash = ["clang++", file_ll, "-o", fichExecuter]
+    res = executer(commande_bash)
+
+    if res and res.returncode == 0:
+        try:
+            debut = perf_counter()
+            subprocess.run([f"./{fichExecuter}"], capture_output=True, timeout=10)
+            fin = perf_counter()
+            
+            tmpExec = (fin - debut) * 1000 
+            tmpKr= round(tmpExec, 5)
+            return f"{tmpKr}"
+        
+        except Exception as e:
+            return f"Erreur exécution : {str(e)}"
+        finally:
+            if os.path.exists(fichExecuter):
+                os.remove(fichExecuter)
+    return "Erreur compil perf"

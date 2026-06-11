@@ -1,131 +1,12 @@
 from flask import Flask, request, jsonify
-import subprocess
-from pathlib import Path
-import os
-import json
 import uuid
 import ollama
-import time
+import json
+import os
 
 app = Flask(__name__)
 
 client = ollama.Client(host='http://ollama:11434')
-
-
-########## fonctions utilitaires ##########
-
-
-def executer(commande, timeout=15):
-    try:
-        res = subprocess.run(commande, capture_output=True, text=True, timeout=timeout)
-        return res
-    except subprocess.TimeoutExpired:
-        return None
-    except Exception as e:
-        return str(e)
-
-def genererLLVM(file_c, uid, opt):
-    file_ll = f"temp_{uid}_O{opt}.ll"
-    if opt < 0 : 
-        print("erreur opt ne peut pas être négatif ")
-    elif opt == 0 : 
-        commande_bash = ["clang", file_c, "-emit-llvm", "-S", "-c", "-o", file_ll]
-        res = executer(commande_bash)
-    else : 
-        commande_bash = ["clang", file_c, f"-O{opt}", "-emit-llvm", "-S", "-o", file_ll]
-        res = executer(commande_bash)
-    
-    if res and hasattr(res, 'returncode') and res.returncode != 0:
-        print(f"ERREUR CLANG O{opt} : {res.stderr}")
-        return "", None
-
-    if res and hasattr(res, 'returncode') and res.returncode == 0:
-        if os.path.exists(file_ll):
-            with open(file_ll, "r") as f:
-                return f.read(), file_ll
-                
-    return "", None
-
-
-def difference_entre_passes(file1, file2):
-    commande_diff = ["diff", "-u", file1, file2]
-
-    try:
-        result = subprocess.run(commande_diff, capture_output=True, text=True)
-        return result.stdout 
-    except Exception as e:
-        return f"Erreur diff : {str(e)}"
-
-
-def genererPasses(file_c, uid, opt):
-    pass_dir = f"passes_{uid}_O{opt}"
-    os.makedirs(pass_dir, exist_ok=True)
-    
-    commande_bash = ["clang", f"-O{opt}", "-mllvm", "-print-after-all", file_c, "-c", "-o", "/dev/null"]
-    res = executer(commande_bash)
-    
-    listP = []
-    listD = []
-    perf = []
-
-    ## passes 00
-    leContenu, cheminC = genererLLVM(file_c, uid, opt)
-    
-    vieux_chemin = None
-    if cheminC and os.path.exists(cheminC):
-        listP.append(leContenu)
-        vieux_chemin = cheminC
-
-    #### suites des passes
-    
-    if res and res.stderr:
-        segments = res.stderr.split("*** IR Dump After")
-        vieux_chemin = None
-        
-        for i, segment in enumerate(segments[1:], 1):
-            chemin_actuel = os.path.join(pass_dir, f"pass_{i:02d}.ll")
-            contenu = "*** IR Dump After" + segment
-            
-            with open(chemin_actuel, "w") as f:
-                f.write(contenu)
-            listP.append(contenu)
-
-            if vieux_chemin:
-                diff_res = subprocess.run(["diff", "-u", vieux_chemin, chemin_actuel], capture_output=True, text=True)
-                listD.append(diff_res.stdout)
-            mesure = mesurePerf(chemin_actuel, f"{uid}_O{opt}_pass_{i:02d}")
-            perf.append(mesure)
-            vieux_chemin = chemin_actuel
-
-    for f in Path(pass_dir).glob("*.ll"): f.unlink()
-    os.rmdir(pass_dir)
-    
-    return listP, listD, perf
-
-
-def mesurePerf(file_ll, uid):
-    fichExecuter = f"exe_{uid}" 
-    
-    commande_bash = ["clang", file_ll, "-o", fichExecuter]
-    res = executer(commande_bash)
-
-    if res and res.returncode == 0:
-        try:
-            debut = time.compteur()
-            subprocess.run([f"./{fichExecuter}"], capture_output=True, timeout=10)
-            fin = time.compteur()
-            
-            tmpExec = (fin - debut) * 1000 
-            tmpKr= round(tmpExec, 5)
-            return f"{tmpKr}"
-        
-        except Exception as e:
-            return f"Erreur exécution : {str(e)}"
-        finally:
-            if os.path.exists(fichExecuter):
-                os.remove(fichExecuter)
-    return "Erreur compil perf"
-
 
 ############# main #############
 
@@ -135,40 +16,44 @@ def mesurePerf(file_ll, uid):
 def compile_code():
     uid = str(uuid.uuid4())
     file_path = f"temp_{uid}.c"
-    file_s = f"temp_{uid}.ll"
-    fileTemp = f"file_temp_{uid}.ll"
+
     fichSupp = []
+
+    ## récup code 
+    donnes = request.get_json()
+    code = donnes.get('code', '')
+    langage = donnes.get('lang', 'c') 
+    if not code.strip():
+        return jsonify({"status": "error", "message": "Le code est vide"})
+    
+    with open(file_path, "w") as file:
+        file.write(code)
+
+    if langage == 'cpp':
+        import fonctions.cpp as fct
+    else:
+        import fonctions.c as fct
 
     try:
 
-        ## récup code C
-        donnes = request.get_json()
-        code_c = donnes.get('code', '')
-    
-        if not code_c.strip():
-            return jsonify({"status": "error", "message": "Le code est vide"})
-        
-        with open(file_path, "w") as file:
-            file.write(code_c)
-
        #0
-        llvm0, path0 = genererLLVM(file_path, uid, 0)
-        passes0, diffs0,perf0 = genererPasses(file_path, uid, 0)
+        llvm0, path0 = fct.genererLLVM(file_path, uid, 0)
+        passes0, diffs0,perf0 = fct.genererPasses(file_path, uid, 0)
         fichSupp.append(path0)
 
         #1
-        llvm1, path1 = genererLLVM(file_path, uid, 1)
-        passes1, diffs1,perf1 = genererPasses(file_path, uid, 1)
+        llvm1, path1 = fct.genererLLVM(file_path, uid, 1)
+        passes1, diffs1,perf1 = fct.genererPasses(file_path, uid, 1)
         fichSupp.append(path1)
 
         #2
-        llvm2, path2 = genererLLVM(file_path, uid, 2)
-        passes2, diffs2,perf2 = genererPasses(file_path, uid, 2)
+        llvm2, path2 = fct.genererLLVM(file_path, uid, 2)
+        passes2, diffs2,perf2 = fct.genererPasses(file_path, uid, 2)
         fichSupp.append(path2)
 
         #3
-        llvm3, path3 = genererLLVM(file_path, uid, 3)
-        passes3, diffs3,perf3 = genererPasses(file_path, uid, 3)
+        llvm3, path3 = fct.genererLLVM(file_path, uid, 3)
+        passes3, diffs3,perf3 = fct.genererPasses(file_path, uid, 3)
         fichSupp.append(path3)
 
 
@@ -214,7 +99,7 @@ def compile_code():
             model="deepseek-r1:14b",
             messages=[
                 {"role": "system", "content": prompt_sys},
-                {"role": "user", "content": f"Voici le code C :\n{code_c}\nVoici le code LLVM IR :\n{llvm0}"}
+                {"role": "user", "content": f"Voici le code C :\n{code}\nVoici le code LLVM IR :\n{llvm0}"}
             ],
             options={
                 "temperature": 0.1,
@@ -263,7 +148,6 @@ def compile_code():
                 }
             }
         })
-
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
