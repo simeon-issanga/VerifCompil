@@ -21,7 +21,7 @@ services:
   # frontend (React.js propulse par Node)
   web:
     build: ./site
-    container_name: serveur-verif_compil
+    container_name: frontend-verif_compil
     restart: unless-stopped
     env_file:
       - config/env/.env
@@ -36,7 +36,7 @@ services:
   # backend (Python IA & Compilateur)
   pythonserver:
     build: ./serveurPython
-    container_name: do-verif_compil
+    container_name: backend-verif_compil
     restart: unless-stopped
     env_file:
       - config/env/.env
@@ -52,6 +52,7 @@ services:
   # Routeur Nginx
   nginx-proxy:
     image: 'nginx:stable-alpine'
+    container_name: nginx-proxy-verif_compil
     restart: unless-stopped
     ports:
       - '8080:80'

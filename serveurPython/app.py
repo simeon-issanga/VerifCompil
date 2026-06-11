@@ -61,6 +61,16 @@ def genererPasses(file_c, uid, opt):
     
     listP = []
     listD = []
+
+    ## passes 00
+    leContenu, cheminC = genererLLVM(file_c, uid, opt)
+    
+    vieux_chemin = None
+    if cheminC and os.path.exists(cheminC):
+        listP.append(leContenu)
+        vieux_chemin = cheminC
+
+    #### suites des passes
     
     if res and res.stderr:
         segments = res.stderr.split("*** IR Dump After")
