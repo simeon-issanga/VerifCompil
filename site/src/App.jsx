@@ -293,7 +293,21 @@ export default function App() {
     if (title) title.textContent = t('app-title');
   }, [t, i18n.language]);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      e = e || window.event;
+      if (e.keyCode === 37) {
+        handleNavigation('previous');
+      } else if (e.keyCode === 39) {
+        handleNavigation('next');
+      }
+    };
 
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleNavigation]);
 
   function majReponseIA(listeLL, listeExplications, listeDiffs) {
     const isResponseObject = reponseIA && typeof reponseIA === 'object' && listeLL;
@@ -573,19 +587,6 @@ export default function App() {
           langage={t('code_version')+` ${currentPass + 2}`}
         />
       </div>
-
-      <script>
-        {
-          document.onkeydown = (e) => {
-            e = e || window.event;
-            if (e.keyCode === 37) {
-              handleNavigation("previous")
-            } else if (e.keyCode === 39) {
-              handleNavigation("next")
-            }
-          }
-        }
-      </script>
     </>
   )
 }
