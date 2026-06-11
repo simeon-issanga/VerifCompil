@@ -6,7 +6,7 @@ services:
     container_name: ollama-verif
     restart: unless-stopped
     volumes:
-      - ./ollama_data:/root/.ollama
+      - /home/simeon/VerifCompilollama_data:/root/.ollama
     networks:
       - verif_compil
     # rappel futur : ne jamais exposé ses types de ports car gpu peut être utilisé 
