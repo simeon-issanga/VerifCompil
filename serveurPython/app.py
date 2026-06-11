@@ -15,7 +15,6 @@ client = ollama.Client(host='http://ollama:11434')
 @app.route('/compile', methods=['POST'], strict_slashes=False)
 def compile_code():
     uid = str(uuid.uuid4())
-    file_path = f"temp_{uid}.c"
 
     fichSupp = []
 
@@ -23,18 +22,20 @@ def compile_code():
     donnes = request.get_json()
     code = donnes.get('code', '')
     langage = donnes.get('lang', '') 
-    if not code.strip():
+    if not code.strip() or langage not in ['c', 'cpp']:
         return jsonify({"status": "error", "message": "Le code est vide"})
     
-    with open(file_path, "w") as file:
-        file.write(code)
 
     if langage == 'cpp':
         import fonctions.cpp as fct
+        file_path = f"temp_{uid}.cpp"
     else:
         import fonctions.c as fct
+        file_path = f"temp_{uid}.c"
 
     try:
+        with open(file_path, "w") as file:
+            file.write(code)
 
        #0
         llvm0, path0 = fct.genererLLVM(file_path, uid, 0)
