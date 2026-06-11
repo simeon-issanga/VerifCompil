@@ -22,7 +22,7 @@ def compile_code():
     ## récup code 
     donnes = request.get_json()
     code = donnes.get('code', '')
-    langage = donnes.get('lang', 'c') 
+    langage = donnes.get('lang', '') 
     if not code.strip():
         return jsonify({"status": "error", "message": "Le code est vide"})
     
