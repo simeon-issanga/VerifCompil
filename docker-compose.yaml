@@ -34,7 +34,7 @@ services:
   # backend (Python IA & Compilateur)
   pythonserver:
     build: ./serveurPython
-    container_name: pythonserver-verif_compil
+    container_name: do-verif_compil
     env_file:
       - config/env/.env
     environment:
