@@ -420,6 +420,8 @@ export default function App() {
             liste_passesO3: donnees["optimisations"]["03"]["liste_passes"],
             liste_diffsO3: donnees["optimisations"]["03"]["liste_diffs"],
           };
+          console.log(donnees);
+          console.log(texteBrut); //TODO : supprimer console.log
         } else {
           reponseIA.current = "Erreur du serveur : " + donnees.message;
         }
@@ -431,8 +433,6 @@ export default function App() {
       reponseIA.current = 'Erreur de réseau ou serveur injoignable : ' + error.message;
     }
     majReponseIA(reponseIA.current?.liste_llO0 ?? [], reponseIA.current?.liste_explicationO0 ?? [], reponseIA.current?.liste_diffsO0 ?? []);
-    console.log(donnees);
-    console.log(texteBrut); //TODO : supprimer console.log
   }
 
   function handleNavigation(direction) {
