@@ -38,7 +38,6 @@ export default function App() {
   const nextPass = useRef(null); // view de l'éditeur nextPass
 
   const reponseIA = useRef(null); //Ensemble des données affichées
-  const passesModifiees = useRef([[],[],[]],[]); //indices des diff sans changements
 
   const [explications, setExplications] = useState('');
   const [currentPass, setCurrentPass] = useState(0);
@@ -271,6 +270,7 @@ export default function App() {
     if (title) title.textContent = t('app-title');
   }, [t, i18n.language]);
 
+  //gestion de la navigation des passes avec les flèches directionnelles
   useEffect(() => {
     const handleKeyDown = (e) => {
       e = e || window.event;
@@ -280,7 +280,6 @@ export default function App() {
         handleNavigation('next');
       }
     };
-
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
@@ -423,6 +422,7 @@ export default function App() {
         } else {
           reponseIA.current = "Erreur du serveur : " + donnees.message;
         }
+        console.log(donnees);
       } catch (erreurParse) {
         // 4. Si la transformation plante (ce n'est pas du JSON), on affiche l'erreur brute
         reponseIA.current = "Erreur inattendue (Nginx ou plantage Flask) :\n\n" + texteBrut;
@@ -431,6 +431,8 @@ export default function App() {
       reponseIA.current = 'Erreur de réseau ou serveur injoignable : ' + error.message;
     }
     majReponseIA(reponseIA.current?.liste_llO0 ?? [], reponseIA.current?.liste_explicationO0 ?? [], reponseIA.current?.liste_diffsO0 ?? []);
+    console.log(donnees);
+    console.log(texteBrut); //TODO : supprimer console.log
   }
 
   function handleNavigation(direction) {
@@ -479,6 +481,37 @@ export default function App() {
     previousPassHighlighterCompartment.of([]),
   ]
 
+
+
+  //Référence pour simuler le clic sur le input masqué
+  const fileInputRef = useRef(null);
+
+  //Déclenché quand on clique sur le bouton visible
+  const gererClicBouton = () => {
+    fileInputRef.current.click();
+  };
+
+  //Déclenché quand l'utilisateur choisit un fichier
+  const gererChangementFichier = (evenement) => {
+    const fichier = evenement.target.files[0];
+    if (!fichier) return;
+    const lecteur = new FileReader();
+    lecteur.onload = (e) => {
+      reponseIA.current = {}
+      inputRef.current.dispatch({
+        changes: {
+          from: 0,
+          to: inputRef.current.state.doc.length,
+          insert: e.target.result,
+        }
+      });
+      majReponseIA(reponseIA.current?.liste_llO0 ?? [], reponseIA.current?.liste_explicationO0 ?? [], reponseIA.current?.liste_diffsO0 ?? []);
+      setExplications("");
+    };
+    lecteur.readAsText(fichier);
+  };
+
+
   return (
     <>
       <div className="language-selector">
@@ -489,6 +522,22 @@ export default function App() {
           <option value="es">Español</option>
         </select>
       </div>
+
+      <div>
+    
+      <button onClick={gererClicBouton} className="btnImportFichier">Choisir un fichier C / C++</button>
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={gererChangementFichier}
+        accept=".c,.cpp"
+        style={{ display: 'none' }}
+      />
+    </div>
+
+
+
+
       <div className="flex-container">
         <Editor
           editorRef={inputRef}
