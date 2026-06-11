@@ -386,7 +386,7 @@ export default function App() {
       const reponse = await fetch('/api/compile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: inputRef.current.state.doc.toString() })
+        body: JSON.stringify({ code: inputRef.current.state.doc.toString(), lang: "c" }) //TODO : préciser lagage C/C++
       })
 
       const texteBrut = await reponse.text()
