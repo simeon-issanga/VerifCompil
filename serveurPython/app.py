@@ -5,10 +5,15 @@ import os
 import json
 import uuid
 import ollama
+import time
 
 app = Flask(__name__)
 
 client = ollama.Client(host='http://ollama:11434')
+
+
+########## fonctions utilitaires ##########
+
 
 def executer(commande, timeout=15):
     try:
@@ -61,6 +66,7 @@ def genererPasses(file_c, uid, opt):
     
     listP = []
     listD = []
+    perf = []
 
     ## passes 00
     leContenu, cheminC = genererLLVM(file_c, uid, opt)
@@ -87,13 +93,42 @@ def genererPasses(file_c, uid, opt):
             if vieux_chemin:
                 diff_res = subprocess.run(["diff", "-u", vieux_chemin, chemin_actuel], capture_output=True, text=True)
                 listD.append(diff_res.stdout)
-            
+            mesure = mesurePerf(chemin_actuel, f"{uid}_O{opt}_pass_{i:02d}")
+            perf.append(mesure)
             vieux_chemin = chemin_actuel
 
     for f in Path(pass_dir).glob("*.ll"): f.unlink()
     os.rmdir(pass_dir)
     
-    return listP, listD
+    return listP, listD, perf
+
+
+def mesurePerf(file_ll, uid):
+    fichExecuter = f"exe_{uid}" 
+    
+    commande_bash = ["clang", file_ll, "-o", fichExecuter]
+    res = executer(commande_bash)
+
+    if res and res.returncode == 0:
+        try:
+            debut = time.compteur()
+            subprocess.run([f"./{fichExecuter}"], capture_output=True, timeout=10)
+            fin = time.compteur()
+            
+            tmpExec = (fin - debut) * 1000 
+            tmpKr= round(tmpExec, 5)
+            return f"{tmpKr}"
+        
+        except Exception as e:
+            return f"Erreur exécution : {str(e)}"
+        finally:
+            if os.path.exists(fichExecuter):
+                os.remove(fichExecuter)
+    return "Erreur compil perf"
+
+
+############# main #############
+
 
 @app.route('/api/compile', methods=['POST'], strict_slashes=False)
 @app.route('/compile', methods=['POST'], strict_slashes=False)
@@ -118,22 +153,22 @@ def compile_code():
 
        #0
         llvm0, path0 = genererLLVM(file_path, uid, 0)
-        passes0, diffs0 = genererPasses(file_path, uid, 0)
+        passes0, diffs0,perf0 = genererPasses(file_path, uid, 0)
         fichSupp.append(path0)
 
         #1
         llvm1, path1 = genererLLVM(file_path, uid, 1)
-        passes1, diffs1 = genererPasses(file_path, uid, 1)
+        passes1, diffs1,perf1 = genererPasses(file_path, uid, 1)
         fichSupp.append(path1)
 
         #2
         llvm2, path2 = genererLLVM(file_path, uid, 2)
-        passes2, diffs2 = genererPasses(file_path, uid, 2)
+        passes2, diffs2,perf2 = genererPasses(file_path, uid, 2)
         fichSupp.append(path2)
 
         #3
         llvm3, path3 = genererLLVM(file_path, uid, 3)
-        passes3, diffs3 = genererPasses(file_path, uid, 3)
+        passes3, diffs3,perf3 = genererPasses(file_path, uid, 3)
         fichSupp.append(path3)
 
 
@@ -202,25 +237,29 @@ def compile_code():
                     "liste_ll": donnees_ia.get("liste_ll", []),
                     "liste_explication": donnees_ia.get("liste_explication", []),
                     "liste_passes": passes0,
-                    "liste_diffs": diffs0
+                    "liste_diffs": diffs0,
+                    "perf": perf0
                 },
                 "01" : {
                     "liste_ll": [[line] for line in llvm1.split('\n')] if llvm1 else [],
                     "liste_explication" : [""],
                     "liste_passes": passes1,
-                    "liste_diffs": diffs1
+                    "liste_diffs": diffs1,
+                    "perf": perf1
                 },
                 "02" : {
                     "liste_ll": [[line] for line in llvm2.split('\n')] if llvm2 else [],
                     "liste_explication": [""],
                     "liste_passes": passes2,
-                    "liste_diffs": diffs2
+                    "liste_diffs": diffs2,
+                    "perf": perf2
                 },
                 "03" : {
                     "liste_ll": [[line] for line in llvm3.split('\n')] if llvm3 else [],
                     "liste_explication": [""],
                     "liste_passes": passes3,
-                    "liste_diffs": diffs3
+                    "liste_diffs": diffs3,
+                    "perf": perf3
                 }
             }
         })
