@@ -394,12 +394,6 @@ export default function App() {
       try {
         const donnees = JSON.parse(texteBrut)
         if (donnees.status === 'success') {
-          //ajout du code non optimisé de chaque niveau (O0, O1, ..) en première position de leur liste repective
-          for (let niveau of ["00", "01", "02", "03"]) {
-            var codeIR = donnees["optimisations"][niveau]["liste_ll"].map((elem) => elem.join("\n"));
-            codeIR = codeIR.join("\n");
-            donnees["optimisations"][niveau]["liste_passes"].unshift(codeIR);
-          }
           reponseIA.current = {
             liste_c: donnees["liste_c"],
             liste_explicationO0: donnees["optimisations"]["00"]["liste_explication"],
