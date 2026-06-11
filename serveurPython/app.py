@@ -166,7 +166,7 @@ def compile_code():
         """
 
         reponse = client.chat(
-            model="qwen3.6:27b",
+            model="deepseek-r1:14b",
             messages=[
                 {"role": "system", "content": prompt_sys},
                 {"role": "user", "content": f"Voici le code C :\n{code_c}\nVoici le code LLVM IR :\n{llvm0}"}
