@@ -420,8 +420,6 @@ export default function App() {
             liste_passesO3: donnees["optimisations"]["03"]["liste_passes"],
             liste_diffsO3: donnees["optimisations"]["03"]["liste_diffs"],
           };
-          console.log(donnees);
-          console.log(texteBrut); //TODO : supprimer console.log
         } else {
           reponseIA.current = "Erreur du serveur : " + donnees.message;
         }
