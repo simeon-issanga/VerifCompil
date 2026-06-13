@@ -44,33 +44,42 @@ def genererPasses(file_c, uid, opt):
 
     ## passes 00
     leContenu, cheminC = genererLLVM(file_c, uid, opt)
-    if cheminC:
-        listP.append(leContenu)
-        vieux_chemin = cheminC
+    vieux_chemin = cheminC
 
     #### suites des passes
     
     if res and res.stderr:
         segments = res.stderr.split("*** IR Dump After")
-        vieux_chemin = None
         
         for i, segment in enumerate(segments[1:], 1):
-            chemin_actuel = os.path.join(pass_dir, f"pass_{i:02d}.ll")
-            contenu = "*** IR Dump After" + segment
+            nomPasse = segment.split("***")[0].strip()
             
+            contenuBr = segment.split("***", 1)[-1].strip()
+
+            chemin_actuel = os.path.join(pass_dir, f"pass_{i:02d}.ll")
+            
+            contenu = "*** IR Dump After" + segment
+            listP.append(contenu)
+
             with open(chemin_actuel, "w") as f:
-                f.write(contenu)
+                f.write(contenuBr)
+            
             listP.append(contenu)
 
             if vieux_chemin:
                 diff_res = difference_entre_passes(vieux_chemin, chemin_actuel)
                 listD.append(diff_res)
+            
             mesure = mesurePerf(chemin_actuel, f"{uid}_O{opt}_pass_{i:02d}")
             perf.append(mesure)
             vieux_chemin = chemin_actuel
 
-    for f in Path(pass_dir).glob("*.ll"): f.unlink()
-    os.rmdir(pass_dir)
+    if os.path.exists(cheminC): 
+        os.remove(cheminC)
+    for f in Path(pass_dir).glob("*.ll"): 
+        f.unlink()
+    if os.path.exists(pass_dir): 
+        os.rmdir(pass_dir)
     
     return listP, listD, perf
 
