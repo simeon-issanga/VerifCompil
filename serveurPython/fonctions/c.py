@@ -35,7 +35,7 @@ def genererPasses(file_c, uid, opt):
     pass_dir = f"passes_{uid}_O{opt}"
     os.makedirs(pass_dir, exist_ok=True)
     
-    commande_bash = ["clang", f"-O{opt}", "-mllvm", "-print-after-all", file_c, "-c", "-o", "/dev/null"]
+    commande_bash = ["clang", f"-O{opt}", "-mllvm", "-print-after-all", "-mllvm", "-print-module-scope",file_c, "-c", "-o", "/dev/null"]
     res = executer(commande_bash)
     
     listP = []
@@ -106,4 +106,5 @@ def mesurePerf(file_ll, uid):
         finally:
             if os.path.exists(fichExecuter):
                 os.remove(fichExecuter)
+
     return "Erreur compil perf"
