@@ -89,7 +89,7 @@ def mesurePerf(file_ll, uid):
         res = executer(commande_bash)
 
         if not res or res.returncode != 0:
-            return "Erreur compil perf"
+            return "inexécutable"
 
         try:
             debut = perf_counter()
@@ -104,8 +104,6 @@ def mesurePerf(file_ll, uid):
         return f"Pb avec cmd bash : {str(e)}"
     
     finally:
-        # Nettoyage : restaurer n'est pas nécessaire (on n'a pas modifié file_ll)
-        # mais on supprime les fichiers temporaires
         if os.path.exists(FichPropre):
             os.remove(FichPropre)
         if os.path.exists(fichExecuter):
