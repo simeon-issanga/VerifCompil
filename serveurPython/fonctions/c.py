@@ -34,77 +34,58 @@ def genererLLVM(file_c, uid, opt):
 def genererPasses(file_c, uid, opt):
     pass_dir = f"passes_{uid}_O{opt}"
     os.makedirs(pass_dir, exist_ok=True)
-    
-    commande_bash = ["clang", f"-O{opt}", "-mllvm", "-print-after-all", "-mllvm", "-print-module-scope",file_c, "-c", "-o", "/dev/null"]
+    commande_bash = ["clang", f"-O{opt}", "-mllvm", "-print-after-all", file_c, "-c", "-o", "/dev/null"]
     res = executer(commande_bash)
-    
+
     listP = []
     listD = []
     perf = []
 
-    ## passes 00
-    leContenu, cheminC = genererLLVM(file_c, uid, opt)
-    vieux_chemin = cheminC
+    leContenu, vieux_chemin = genererLLVM(file_c, uid, opt)
 
-    #### suites des passes
-    
     if res and res.stderr:
         segments = res.stderr.split("*** IR Dump After")
-        
         for i, segment in enumerate(segments[1:], 1):
             nomPasse = segment.split("***")[0].strip()
-            
-            contenuBr = segment.split("***", 1)[-1].strip()
-
             chemin_actuel = os.path.join(pass_dir, f"pass_{i:02d}.ll")
-            
             contenu = "*** IR Dump After" + segment
-            listP.append(contenu)
 
             with open(chemin_actuel, "w") as f:
-                f.write(contenuBr)
-            
+                f.write(contenu)
+
             listP.append(contenu)
 
             if vieux_chemin:
                 diff_res = difference_entre_passes(vieux_chemin, chemin_actuel)
                 listD.append(diff_res)
-            
+
             mesure = mesurePerf(chemin_actuel, f"{uid}_O{opt}_pass_{i:02d}")
             perf.append(mesure)
             vieux_chemin = chemin_actuel
 
-    if os.path.exists(cheminC): 
-        os.remove(cheminC)
-    for f in Path(pass_dir).glob("*.ll"): 
+    for f in Path(pass_dir).glob("*.ll"):
         f.unlink()
-    if os.path.exists(pass_dir): 
-        os.rmdir(pass_dir)
-    
+    os.rmdir(pass_dir)
+
     return listP, listD, perf
 
 
-
 def mesurePerf(file_ll, uid):
-    fichExecuter = f"exe_{uid}" 
-    
+    fichExecuter = f"exe_{uid}"
     commande_bash = ["clang", file_ll, "-o", fichExecuter]
     res = executer(commande_bash)
 
-    if res and res.returncode == 0:
-        try:
-            debut = perf_counter()
-            subprocess.run([f"./{fichExecuter}"], capture_output=True, timeout=10)
-            fin = perf_counter()
-            
-            tmpExec = (fin - debut) * 1000 
-            tmpKr= round(tmpExec, 5)
-            return f"{tmpKr}"
-        
-        except Exception as e:
-            return f"Erreur exécution : {str(e)}"
-        finally:
-            if os.path.exists(fichExecuter):
-                os.remove(fichExecuter)
+    if not res or res.returncode != 0:          
+        return "Erreur compil perf"
 
-    return "Erreur compil perf"
+    try:
+        debut = perf_counter()
+        subprocess.run([f"./{fichExecuter}"], capture_output=True, timeout=10)
+        fin = perf_counter()
+        tmpExec = (fin - debut) * 1000
+        return f"{round(tmpExec, 5)}"
+    except Exception as e:
+        return f"Erreur exécution : {str(e)}"
+    finally:
+        if os.path.exists(fichExecuter):
+            os.remove(fichExecuter)
