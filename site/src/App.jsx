@@ -425,8 +425,6 @@ export default function App() {
       reponseIA.current = 'Erreur de réseau ou serveur injoignable : ' + error.message;
     }
     majReponseIA(reponseIA.current?.liste_llO0 ?? [], reponseIA.current?.liste_explicationO0 ?? [], reponseIA.current?.liste_diffsO0 ?? []);
-    console.log(donnees);
-    console.log(texteBrut); //TODO : supprimer console.log
   }
 
   function handleNavigation(direction) {
