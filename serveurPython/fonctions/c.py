@@ -72,20 +72,41 @@ def genererPasses(file_c, uid, opt):
 
 def mesurePerf(file_ll, uid):
     fichExecuter = f"exe_{uid}"
-    commande_bash = ["clang", file_ll, "-o", fichExecuter]
-    res = executer(commande_bash)
+    
+    with open(file_ll, "r") as f:
+        leFich = f.read()
+    
+    lignes = leFich.splitlines(keepends=True)
+    lignesOK = [l for l in lignes if not l.startswith("***")]
+    contenuPropre = "".join(lignesOK)
 
-    if not res or res.returncode != 0:          
-        return "Erreur compil perf"
-
+    FichPropre = file_ll.replace(".ll", "_clean.ll")
+    with open(FichPropre, "w") as f:
+        f.write(contenuPropre)   
+    
     try:
-        debut = perf_counter()
-        subprocess.run([f"./{fichExecuter}"], capture_output=True, timeout=10)
-        fin = perf_counter()
-        tmpExec = (fin - debut) * 1000
-        return f"{round(tmpExec, 5)}"
+        commande_bash = ["clang", FichPropre, "-o", fichExecuter]
+        res = executer(commande_bash)
+
+        if not res or res.returncode != 0:
+            return "Erreur compil perf"
+
+        try:
+            debut = perf_counter()
+            subprocess.run([f"./{fichExecuter}"], capture_output=True, timeout=10)
+            fin = perf_counter()
+            return f"{round((fin - debut) * 1000, 5)}"
+        
+        except Exception as e:
+            return f"Erreur exécution : {str(e)}"
+    
     except Exception as e:
-        return f"Erreur exécution : {str(e)}"
+        return f"Pb avec cmd bash : {str(e)}"
+    
     finally:
+        # Nettoyage : restaurer n'est pas nécessaire (on n'a pas modifié file_ll)
+        # mais on supprime les fichiers temporaires
+        if os.path.exists(FichPropre):
+            os.remove(FichPropre)
         if os.path.exists(fichExecuter):
             os.remove(fichExecuter)
