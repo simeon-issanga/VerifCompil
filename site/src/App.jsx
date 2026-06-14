@@ -8,7 +8,7 @@ import { cpp } from "@codemirror/lang-cpp"
 import { irLanguage, irHighlight } from "./IRLanguage"
 import { tags } from "@lezer/highlight"
 import { StreamLanguage, HighlightStyle, syntaxHighlighting } from "@codemirror/language"
-import { createLineHoverHighlighter, createLineDiffHiglighter, lineClickHandler, requestUpdateLines } from "./lineClickHandler"
+import { createLineHoverHighlighter, createLineDiffHiglighter, lineClickHandler, requestUpdateLines, resetHighlights } from "./lineClickHandler"
 import { useTranslation } from 'react-i18next';
 import i18n from './i18n.js'
 
@@ -17,8 +17,6 @@ const inputHighlighterCompartment = new Compartment();
 const outputHighlighterCompartment = new Compartment();
 const previousPassHighlighterCompartment = new Compartment();
 const nextPassHighlighterCompartment = new Compartment();
-
-let niveau_optimisation = 0;
 
 export default function App() {
 
@@ -37,12 +35,21 @@ export default function App() {
   const previousPass = useRef(null); // view de l'éditeur previousPass
   const nextPass = useRef(null); // view de l'éditeur nextPass
 
+  const niveau_optimisation = useRef(0);
+
+
   const reponseIA = useRef(null); //Ensemble des données affichées
 
   const [explications, setExplications] = useState('');
   const [currentPass, setCurrentPass] = useState(0);
   const [message, setMessage] = useState('');
   const [nbPasses, setNbPasses] = useState(0);
+
+
+  const indicesFiltres = useRef([])   // liste des indices de passes avec changement
+  const K = useRef(0)                  // nombre total de passes avec changement  
+  const [afficherFiltre, setAfficherFiltre] = useState(false) // toggle entre les deux modes (montrer tous les passes / montrer les passes avec changement)
+
 
   useEffect(() => {//TEST de données pour reponseIA
     const donnees = {
@@ -242,7 +249,7 @@ export default function App() {
 
 
   useEffect(() => { //met à jour l'affichage lors de l'appuie sur les flèches.
-    let listePass = reponseIA.current?.["liste_passesO" + niveau_optimisation] ?? [];
+    let listePass = reponseIA.current?.["liste_passesO" + niveau_optimisation.current] ?? [];
     previousPass.current.dispatch({
       changes: {
         from: 0,
@@ -280,7 +287,7 @@ export default function App() {
         handleNavigation('next');
       }
     };
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown); // TODO : Je suis pas convaincu par la recréation du listener à chaque rendu et le handleNavigtion comme déclencheur
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
@@ -289,7 +296,16 @@ export default function App() {
   function majReponseIA(listeLL, listeExplications, listeDiffs) {
     const isResponseObject = reponseIA.current && typeof reponseIA.current === 'object' && listeLL;
 
-    let listePass = reponseIA.current?.["liste_passesO" + niveau_optimisation] ?? [];
+    resetHighlights(); //réinitialise le highlight des lignes
+    let listePass = reponseIA.current?.["liste_passesO" + niveau_optimisation.current] ?? [];
+
+
+    // indices des diffs avec changement dans listeDiff
+    indicesFiltres.current = listeDiffs
+    .map((diff, i) => diffAvecChangements(diff) ? i : null)
+    .filter(i => i !== null)
+    K.current = indicesFiltres.current.length
+
 
     if (isResponseObject) {
       setMessage('');
@@ -348,11 +364,6 @@ export default function App() {
         )
       });
       previousPass.current.dispatch({
-        changes: {
-          from: 0,
-          to: previousPass.current.state.doc.length,
-          insert: listePass[currentPass] ?? "",
-        },
         effects: previousPassHighlighterCompartment.reconfigure(
           createLineDiffHiglighter(
             'previous',
@@ -360,11 +371,6 @@ export default function App() {
         )
       });
       nextPass.current.dispatch({
-        changes: {
-          from: 0,
-          to: nextPass.current.state.doc.length,
-          insert: listePass[currentPass + 1] ?? "",
-        },
         effects: nextPassHighlighterCompartment.reconfigure(
           createLineDiffHiglighter(
             'next',
@@ -375,7 +381,7 @@ export default function App() {
       setMessage(typeof reponseIA.current === 'string' ? reponseIA.current : JSON.stringify(reponseIA.current, null, 2));
     }
     setCurrentPass(0);
-    const totalPasses = reponseIA.current?.["liste_passesO" + niveau_optimisation]?.length ?? 1;
+    const totalPasses = reponseIA.current?.["liste_passesO" + niveau_optimisation.current]?.length ?? 1;
     setNbPasses(Math.max(0, totalPasses - 1));
   };
 
@@ -428,14 +434,27 @@ export default function App() {
   }
 
   function handleNavigation(direction) {
-    const listePass = reponseIA.current?.["liste_passesO" + niveau_optimisation] ?? [];
-    const longueurListePass = listePass.length;
-    if (longueurListePass === 0) return;
-    const maxIndex = Math.max(0, longueurListePass - 2);
-    const nextPassIndex = direction === "next"
-      ? (currentPass >= maxIndex ? maxIndex : currentPass + 1)
-      : (currentPass === 0 ? 0 : currentPass - 1);
-    setCurrentPass(nextPassIndex);
+    if (afficherFiltre) {
+      // on navigue dans indicesFiltres
+      setCurrentPass(prev => {
+        const posActuelle = indicesFiltres.current.indexOf(prev)
+        if (direction === 'next') {
+          const suivant = posActuelle + 1
+          return suivant >= indicesFiltres.current.length ? prev : indicesFiltres.current[suivant]
+        } else {
+          const precedent = posActuelle - 1
+          return precedent < 0 ? prev : indicesFiltres.current[precedent]
+        }
+      })
+    } else {
+      // navigation normale
+      setCurrentPass(prev => {
+        const maxIndex = Math.max(0, (reponseIA.current?.["liste_passesO" + niveau_optimisation.current]?.length ?? 0) - 2)
+        return direction === 'next'
+          ? (prev >= maxIndex ? maxIndex : prev + 1)
+          : (prev === 0 ? 0 : prev - 1)
+      })
+    }
   }
 
   const inputExtensions = [
@@ -497,11 +516,31 @@ export default function App() {
           insert: e.target.result,
         }
       });
-      majReponseIA(reponseIA.current?.liste_llO0 ?? [], reponseIA.current?.liste_explicationO0 ?? [], reponseIA.current?.liste_diffsO0 ?? []);
+      majReponseIA([], [], []);
       setExplications("");
     };
     lecteur.readAsText(fichier);
   };
+
+
+  //permet de savoir si le diff donné en paramètre possède des changements
+  function diffAvecChangements(diffStr) {
+    if (!diffStr || diffStr.trim() === '') return false
+    // on cherche au moins une ligne commençant par + ou - (hors en-têtes)
+    return diffStr.split('\n').some(ligne => 
+      (ligne.startsWith('+') || ligne.startsWith('-')) &&
+      !ligne.startsWith('+++') && !ligne.startsWith('---') && !ligne.startsWith('+***') && !ligne.startsWith('-***')
+    )
+  }
+
+  const listePass = reponseIA.current?.["liste_passesO" + niveau_optimisation.current] ?? []
+  const titrePasse = afficherFiltre
+    ? `(${K.current} modifications) pass ${currentPass + 1} → ${currentPass + 2} : ${
+        (listePass[currentPass + 1] ?? '').match(/^\s*\*\*\* IR Dump After .* \*\*\*:?$/m)?.[0] ?? ''
+      }`
+    : `pass ${currentPass + 1} / ${nbPasses} : ${
+        (listePass[currentPass + 1] ?? '').match(/^\s*\*\*\* IR Dump After .* \*\*\*:?$/m)?.[0] ?? ''
+      }`
 
 
   return (
@@ -543,20 +582,34 @@ export default function App() {
           langage={t("IR_code")}
         />
       </div>
+
       <div>
-        <button onClick={() => { niveau_optimisation = 0; majReponseIA(reponseIA.current?.liste_llO0 ?? [], reponseIA.current?.liste_explicationO0 ?? [], reponseIA.current?.liste_diffsO0 ?? []) }}>O0</button>
-        <button onClick={() => { niveau_optimisation = 1; majReponseIA(reponseIA.current?.liste_llO1 ?? [], reponseIA.current?.liste_explicationO1 ?? [], reponseIA.current?.liste_diffsO1 ?? []) }}>O1</button>
-        <button onClick={() => { niveau_optimisation = 2; majReponseIA(reponseIA.current?.liste_llO2 ?? [], reponseIA.current?.liste_explicationO2 ?? [], reponseIA.current?.liste_diffsO2 ?? []) }}>O2</button>
-        <button onClick={() => { niveau_optimisation = 3; majReponseIA(reponseIA.current?.liste_llO3 ?? [], reponseIA.current?.liste_explicationO3 ?? [], reponseIA.current?.liste_diffsO3 ?? []) }}>O3</button>
+        <button onClick={() => { niveau_optimisation.current = 0; majReponseIA(reponseIA.current?.liste_llO0 ?? [], reponseIA.current?.liste_explicationO0 ?? [], reponseIA.current?.liste_diffsO0 ?? []) }}>O0</button>
+        <button onClick={() => { niveau_optimisation.current = 1; majReponseIA(reponseIA.current?.liste_llO1 ?? [], reponseIA.current?.liste_explicationO1 ?? [], reponseIA.current?.liste_diffsO1 ?? []) }}>O1</button>
+        <button onClick={() => { niveau_optimisation.current = 2; majReponseIA(reponseIA.current?.liste_llO2 ?? [], reponseIA.current?.liste_explicationO2 ?? [], reponseIA.current?.liste_diffsO2 ?? []) }}>O2</button>
+        <button onClick={() => { niveau_optimisation.current = 3; majReponseIA(reponseIA.current?.liste_llO3 ?? [], reponseIA.current?.liste_explicationO3 ?? [], reponseIA.current?.liste_diffsO3 ?? []) }}>O3</button>
         <button className="btnValider" onClick={handleValidate}>{t('submit')}</button>
         <p>{message}</p>
       </div>
 
       <div className="explications">{explications}</div>
 
+      <button onClick={() => {
+        const nouveauMode = !afficherFiltre
+        setAfficherFiltre(nouveauMode)
+        // en passant en mode filtré, on saute au premier indice avec changement
+        if (nouveauMode && indicesFiltres.current.length > 0) {
+          setCurrentPass(indicesFiltres.current[0])
+        } else {
+          setCurrentPass(0)
+        }
+      }}>
+        {afficherFiltre ? 'Passes de modification' : 'Toutes les passes'}
+      </button>
+      
       <div className="flex-container">
         <button className="btnNavigation" onClick={() => handleNavigation("previous")}>previous</button>
-        <div><h2>pass {`${currentPass + 1} / ${nbPasses} : ${((reponseIA.current?.["liste_passesO" + niveau_optimisation]?.[currentPass + 1] ?? "").match(/^\s*\*\*\* IR Dump After .* \*\*\*:?$/m)?.[0] ?? "")} `}</h2></div>
+        <div><h2>{titrePasse}</h2></div>
         <button className="btnNavigation" onClick={() => handleNavigation("next")}>next</button>
       </div>
       <div className="flex-container">
