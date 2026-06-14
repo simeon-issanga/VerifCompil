@@ -42,6 +42,7 @@ def genererPasses(file_c, uid, opt):
     perf = []
 
     leContenu, vieux_chemin = genererLLVM(file_c, uid, opt)
+    listP.append(leContenu)
 
     if res and res.stderr:
         segments = res.stderr.split("*** IR Dump After")
