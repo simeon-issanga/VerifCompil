@@ -172,7 +172,6 @@ export function createLineDiffHiglighter(editorKey, passDiff){
                         couleurParLigneDoc[lignePrevious - 1] = "background: #ff000060"
                     }
                     lignePrevious++
-
                 } else if (symbole === '+') {
                     // ligne ajoutée — seulement dans next
                     if (editorKey === 'next') {
@@ -251,10 +250,10 @@ export const lineClickHandler = EditorView.domEventHandlers({ //méthode statiqu
 
 })
 
-export function requestUpdateLines(view, currentDif) {
+export function requestUpdateLines(view, currentDif) { //TODO : passesModifiees
     const plugin = trouverPlugin(view)
     if (plugin) {
-        plugin.decorations = plugin.setUpdatedLines(view, currentDif)  // ← assigner
+        plugin.decorations = plugin.setUpdatedLines(view, currentDif)
         view.dispatch({})
     }
 }
@@ -265,4 +264,12 @@ function trouverPlugin(view) {
         if (plugin) return plugin
     }
     return null
+}
+
+export function resetHighlights(){
+    blocHoverInput = [];
+    blocHoverOutput = [];
+    blocClicInput = [];
+    blocClicOutput = [];
+    explicClic = ''
 }
