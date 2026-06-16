@@ -10,7 +10,7 @@ i18n
         resources: {
             en: {
                 translation: {
-                    "app-title": "parallele React EN",
+                    "app-title": "from C to LLVM - IR",
                     "title": "Translation from C to LLVM - IR",
                     "C_code": "C code",
                     "IR_code": "IR code (before optimisation)",
@@ -25,7 +25,7 @@ i18n
             },
             fr: {
                 translation: {
-                    "app-title": "parallele React FR",
+                    "app-title": "C vers LLVM - IR",
                     "title": "Traduction de C vers LLVM - IR",
                     "C_code": "code en C",
                     "IR_code": "code en IR (avant optimisation)",
@@ -40,7 +40,7 @@ i18n
             },
             es: {
                 translation: {
-                    "app-title": "parallele React ES",
+                    "app-title": "de C a LLVM-IR",
                     "title": "Traducción de C a LLVM-IR",
                     "C_code": "código en C",
                     "IR_code": "código en IR (antes de la optimización)",
