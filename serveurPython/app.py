@@ -60,60 +60,40 @@ def compile_code():
 
         #  Requête à l'IA
         prompt_sys = """
-            Tu es un expert en compilation et en LLVM IR. Ta tâche est d'analyser un code C et son code LLVM IR correspondant, puis de générer une structure JSON qui fait le lien entre chaque ligne de code C et les instructions IR qui lui sont associées.
+             Tu es un expert en infrastructure LLVM. Ton rôle est de mapper le code C avec le code LLVM IR de manière chirurgicale.
 
-            RÈGLES STRICTES :
-            1. Le JSON doit suivre EXACTEMENT cette structure :
+            RÈGLES DE FORMATAGE JSON :
+            1. Tu dois répondre UNIQUEMENT avec un objet JSON valide.
+            2. Le JSON contient 3 listes de même longueur : "liste_c", "liste_ll", "liste_explication".
+
+            STRUCTURE INTERNE :
+            - "liste_c" : [Chaîne] La ligne de code C originale. Si c'est pour des métadonnées globales, utilise "".
+            - "liste_ll" : [[Chaîne]] Une liste de tableaux. Chaque tableau contient les instructions IR liées à la ligne C.
+            - "liste_explication" : [[Chaîne]] Une liste de tableaux. Chaque tableau contient les explications correspondant 1-pour-1 aux instructions de liste_ll.
+
+            RÈGLES D'ALIGNEMENT :
+            - L'instruction liste_ll[i][j] doit avoir son explication à liste_explication[i][j].
+            - Si une ligne C n'a pas d'équivalent IR (ex: une accolade seule), liste_ll[i] et liste_explication[i] doivent être des tableaux vides [].
+            - Les métadonnées de début de fichier (!llvm.module.flags, target triple, etc.) doivent être regroupées à l'index 0 avec une explication pour CHAQUE ligne.
+
+            EXEMPLE TYPE :
             {
-                "liste_c": ["ligne1", "ligne2", ...],
-                "liste_ll": [["instr1", "instr2"], ["instr3"], ...],
-                "liste_explication": [["explication1", "explication2"], ["explication3"], ...]
-            }
-
-            2. Pour CHAQUE ligne de code C (même les lignes vides), tu dois :
-            - La mettre dans "liste_c"
-            - Associer les instructions IR correspondantes dans "liste_ll"
-            - Donner une explication pour CHAQUE instruction IR dans "liste_explication"
-
-            3. RÈGLES DE CORRESPONDANCE :
-            - Si une ligne C ne produit PAS d'instructions IR (ex: ligne vide, commentaire, directives de préprocesseur), mets un tableau vide [] dans "liste_ll" et "liste_explication"
-            - Si une ligne C produit des métadonnées (comme target triple, module flags, etc.), mets "" dans "liste_c" et associe ces métadonnées dans "liste_ll"
-            - Les métadonnées globales (target triple, !0 = !{...}, etc.) doivent être dans le PREMIER élément de "liste_c" avec la valeur ""
-
-            4. FORMAT DES EXPLICATIONS :
-            - Chaque explication doit être en FRANÇAIS
-            - Doit être concise (1 phrase max)
-            - Doit expliquer ce que fait l'instruction IR en termes simples
-
-            5. GESTION DES LIGNES MULTIPLES :
-            - Une ligne C peut produire plusieurs instructions IR : regroupe-les dans le même tableau
-            - Une instruction IR peut être produite par plusieurs lignes C : duplique-la dans chaque tableau
-
-            6. ORDRE :
-            - Respecte l'ordre d'apparition dans le code C
-            - Respecte l'ordre d'apparition dans le code IR
-
-            EXEMPLE DE SORTIE ATTENDUE :
-            {
-                "liste_c": ["", "int main() {", "    int x = 5;", "    return x;", "}"],
+                "liste_c": ["", "int main() {"],
                 "liste_ll": [
-                    ["target triple = \"x86_64\"", "!0 = !{i32 1, \"wchar_size\", i32 4}"],
-                    ["define i32 @main() {"],
-                    ["%1 = alloca i32", "store i32 5, i32* %1"],
-                    ["%2 = load i32, i32* %1", "ret i32 %2"],
-                    ["}"]
+                    ["target triple = \\"x86_64\\"", "!0 = !{i32 1, !\\"wchar_size\\", i32 4}"],
+                    ["define i32 @main() {"]
                 ],
                 "liste_explication": [
-                    ["Définit l'architecture cible", "Définit la taille de wchar_t à 4 octets"],
-                    ["Début de la fonction principale"],
-                    ["Alloue 4 octets sur la pile", "Stocke la valeur 5 dans la variable"],
-                    ["Charge la valeur de la variable", "Retourne la valeur chargée"],
-                    ["Fin de la fonction"]
+                    ["Définit l'architecture cible", "Définit la taille du type wchar_t à 4 octets"],
+                    ["Début de la fonction principale"]
                 ]
             }
 
-            Analyse le code C et le LLVM IR fournis et génère le JSON correspondant.
-                
+            CONSIGNES DE SÉCURITÉ JSON :
+                - Chaque chaîne de caractères doit être sur une SEULE ligne (pas de vrais retours à la ligne).
+                - TRÈS IMPORTANT : Tous les guillemets doubles à l'intérieur des instructions LLVM doivent être échappés avec un triple backslash pour le JSON (ex: \\\" ).
+                - N'inclus jamais de texte ou d'explications en dehors de l'objet JSON.
+
         """
 
         reponse = client.chat(
