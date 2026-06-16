@@ -103,8 +103,8 @@ def compile_code():
                 {"role": "user", "content": f"Voici le code C :\n{code}\nVoici le code LLVM IR :\n{llvm0}"}
             ],
             options={
-                "temperature": 0.1,
-                "num_ctx": 10000  
+                "temperature": 0.2,
+                "num_ctx": 9000  
             }
         )
         
