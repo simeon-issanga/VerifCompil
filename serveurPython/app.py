@@ -104,7 +104,7 @@ def compile_code():
             ],
             options={
                 "temperature": 0.1,
-                "num_ctx": 8000  
+                "num_ctx": 10000  
             }
         )
         
