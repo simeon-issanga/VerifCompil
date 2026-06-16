@@ -51,6 +51,11 @@ export default function App() {
   const [afficherFiltre, setAfficherFiltre] = useState(false) // toggle entre les deux modes (montrer tous les passes / montrer les passes avec changement)
 
 
+/*
+
+*/
+
+
   useEffect(() => {//TEST de données pour reponseIA
     const donnees = {
       "liste_c": [
