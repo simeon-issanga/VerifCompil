@@ -51,11 +51,6 @@ export default function App() {
   const [afficherFiltre, setAfficherFiltre] = useState(false) // toggle entre les deux modes (montrer tous les passes / montrer les passes avec changement)
 
 
-/*
-
-*/
-
-
   useEffect(() => {//TEST de données pour reponseIA
 
 
@@ -2428,7 +2423,24 @@ export default function App() {
             'next',
             listeDiffs)
         )
-      })
+      });
+
+      //TODO : jsp si nécéssaire
+      previousPass.current.dispatch({
+      changes: {
+        from: 0,
+        to: previousPass.current.state.doc.length,
+        insert: listePass[currentPass] ?? "",
+      }
+    });
+    nextPass.current.dispatch({
+      changes: {
+        from: 0,
+        to: nextPass.current.state.doc.length,
+        insert: listePass[currentPass + 1] ?? "",
+      }
+    });
+
     } else {
       setMessage(typeof reponseIA.current === 'string' ? reponseIA.current : JSON.stringify(reponseIA.current, null, 2));
     }
@@ -2668,12 +2680,12 @@ export default function App() {
         <Editor
           editorRef={previousPass}
           extensions={previousPassExtensions}
-          langage={t('code_version') + ` ${currentPass + 1}  (${(reponseIA.current?.["perfO"+niveau_optimisation.current][currentPass] ?? "") === "inexécutable" ? t("inexecutable") : reponseIA.current?.["perfO"+niveau_optimisation.current][currentPass] +"s" })`}
+          langage={t('code_version') + ` ${currentPass + 1}  (${(reponseIA.current?.["perfO"+niveau_optimisation.current]?.[currentPass] ?? "") === "inexécutable" ? t("inexecutable") : ((reponseIA.current?.["perfO"+niveau_optimisation.current]?.[currentPass] +"s") ?? "") }`}
         />
         <Editor
           editorRef={nextPass}
           extensions={nextPassExtensions}
-          langage={t('code_version') + ` ${currentPass + 2} (${(reponseIA.current?.["perfO"+niveau_optimisation.current][currentPass+1] ?? "") === "inexécutable" ? t("inexecutable") : reponseIA.current?.["perfO"+niveau_optimisation.current][currentPass] +"s" })`}
+          langage={t('code_version') + ` ${currentPass + 2} (${(reponseIA.current?.["perfO"+niveau_optimisation.current]?.[currentPass+1] ?? "") === "inexécutable" ? t("inexecutable") : ((reponseIA.current?.["perfO"+niveau_optimisation.current]?.[currentPass+1] +"s") ?? "") })`}
         />
       </div>
     </>
