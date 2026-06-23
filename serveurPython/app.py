@@ -156,7 +156,43 @@ def compile_code():
         for f in fichSupp:
             if f and os.path.exists(f): os.remove(f)
 
+@app.route('/api/expliquer', methods=['POST'], strict_slashes=False)
+@app.route('/expliquer', methods=['POST'], strict_slashes=False)
+def expliquerDiffPass(llvm1, llvm2):
+    
+    prompt = """Tu es un expert en infrastructure LLVM. Ton rôle est d'expliquer ce qui change entre 2 passes
+    RÈGLES DE FORMATAGE :
+        1. Renvoie un JSON valide 
+        2. Ne mets pas de texte avant ou après le JSON
 
+        STRUCTURE INTERNE :
+        - explication : "On peut voir qu'à la ligne ... "
+
+    """
+
+    try : 
+        reponse = client.chat(
+                model="deepseek-r1:14b",
+                messages=[
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": f"Voici l'ancien code llvm-ir' :\n{llvm1}\n Voici le nouveau code llvm-ir :\n{llvm2}"}
+                ],
+                options={
+                    "temperature": 0.2,
+                    "num_ctx": 9000  
+                }
+        )
+        
+        content = reponse['message']['content']
+        clean_json = content.replace("```json", "").replace("```", "").strip()
+        donnees_ia = json.loads(clean_json)
+
+        return jsonify({
+                "status": "success",
+                "explication" : donnees_ia.get("explication","")
+        })
+    except Exception as e : 
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
