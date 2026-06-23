@@ -259,18 +259,22 @@ export default function App() {
             liste_llO0: donnees["optimisations"]["00"]["liste_ll"],
             liste_passesO0: donnees["optimisations"]["00"]["liste_passes"],
             liste_diffsO0: donnees["optimisations"]["00"]["liste_diffs"],
+            perfO0: donnees["optimisations"]["00"]["perf"],
             liste_explicationO1: donnees["optimisations"]["01"]["liste_explication"],
             liste_llO1: donnees["optimisations"]["01"]["liste_ll"],
             liste_passesO1: donnees["optimisations"]["01"]["liste_passes"],
             liste_diffsO1: donnees["optimisations"]["01"]["liste_diffs"],
+            perfO1: donnees["optimisations"]["01"]["perf"],
             liste_explicationO2: donnees["optimisations"]["02"]["liste_explication"],
             liste_llO2: donnees["optimisations"]["02"]["liste_ll"],
             liste_passesO2: donnees["optimisations"]["02"]["liste_passes"],
             liste_diffsO2: donnees["optimisations"]["02"]["liste_diffs"],
+            perfO2: donnees["optimisations"]["02"]["perf"],
             liste_explicationO3: donnees["optimisations"]["03"]["liste_explication"],
             liste_llO3: donnees["optimisations"]["03"]["liste_ll"],
             liste_passesO3: donnees["optimisations"]["03"]["liste_passes"],
             liste_diffsO3: donnees["optimisations"]["03"]["liste_diffs"],
+            perfO3: donnees["optimisations"]["03"]["perf"],
           };
         } else {
           reponseIA.current = "Erreur du serveur : " + donnees.message;
