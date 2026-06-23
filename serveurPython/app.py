@@ -163,8 +163,11 @@ def compile_code():
 
 @app.route('/api/expliquer', methods=['POST'], strict_slashes=False)
 @app.route('/expliquer', methods=['POST'], strict_slashes=False)
-def expliquerDiffPass(llvm1, llvm2):
-    
+def expliquerDiffPass():
+    donnees = request.get_json()
+    llvm1 =  donnees.get('llvm1')
+    llvm2 = donnees.get('llvm2')
+
     prompt = """Tu es un expert en infrastructure LLVM. Ton rôle est d'expliquer ce qui change entre 2 passes
     RÈGLES DE FORMATAGE :
         1. Renvoie un JSON valide 
