@@ -174,7 +174,7 @@ def expliquerDiffPass():
         2. Ne mets pas de texte avant ou après le JSON
 
         STRUCTURE INTERNE :
-        - explication : "On peut voir qu'à la ligne ... "
+        - explication : ""
 
     """
 
