@@ -450,6 +450,7 @@ export default function App() {
     } catch (error) {
       setExplicationsPass("une erreur est survenue")
     }
+    setMessage('');
   }
 
 
