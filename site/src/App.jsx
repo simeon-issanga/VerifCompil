@@ -46,7 +46,7 @@ export default function App() {
   const [currentPass, setCurrentPass] = useState(0);
   const [message, setMessage] = useState('');
   const [nbPasses, setNbPasses] = useState(0);
-
+  const [langageCode, setLangageCode] = useState('c');
 
   const indicesFiltres = useRef([])   // liste des indices de passes avec changement
   const K = useRef(0)                  // nombre total de passes avec changement  
@@ -245,7 +245,10 @@ export default function App() {
       const reponse = await fetch('/api/compile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: inputRef.current.state.doc.toString(), lang: "c" }) //TODO : préciser lagage C/C++
+        body: JSON.stringify({ 
+          code: inputRef.current.state.doc.toString(), 
+          lang: langageCode
+        })
       })
 
       const texteBrut = await reponse.text()
@@ -415,6 +418,7 @@ export default function App() {
     }`
   const { ajouts, suppressions } = compterChangements(reponseIA.current?.["liste_diffsO" + niveau_optimisation.current] ?? [], currentPass)
 
+
   return (
     <>
       <div className="language-selector">
@@ -436,6 +440,14 @@ export default function App() {
           accept=".c,.cpp"
           style={{ display: 'none' }}
         />
+
+        <div className="language-selector">
+          <label>Langage :</label>
+          <select value={langageCode} onChange={(e) => setLangageCode(e.target.value)}>
+            <option value="c">C</option>
+            <option value="cpp">C++</option>
+          </select>
+        </div>
       </div>
 
 
@@ -500,12 +512,12 @@ export default function App() {
         <Editor
           editorRef={previousPass}
           extensions={previousPassExtensions}
-          langage={t('code_version') + ` ${currentPass + 1}  (${(reponseIA.current?.["perfO" + niveau_optimisation.current]?.[currentPass] ?? "") === "inexécutable" ? t("inexecutable") : ((reponseIA.current?.["perfO" + niveau_optimisation.current]?.[currentPass] + "s") ?? "")})`}
+          langage={t('code_version') + ` ${currentPass + 1}  (${(reponseIA.current?.["perfO" + niveau_optimisation.current]?.[currentPass]) ?? ""})`}
         />
         <Editor
           editorRef={nextPass}
           extensions={nextPassExtensions}
-          langage={t('code_version') + ` ${currentPass + 2} (${(reponseIA.current?.["perfO" + niveau_optimisation.current]?.[currentPass + 1] ?? "") === "inexécutable" ? t("inexecutable") : ((reponseIA.current?.["perfO" + niveau_optimisation.current]?.[currentPass + 1] + "s") ?? "")})`}
+          langage={t('code_version') + ` ${currentPass + 2} (${(reponseIA.current?.["perfO" + niveau_optimisation.current]?.[currentPass + 1] ?? "")})`}
         />
       </div>
 
