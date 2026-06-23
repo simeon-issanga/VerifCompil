@@ -60,10 +60,10 @@ def compile_code():
 
         #  Requête à l'IA
         prompt_sys = """
-             Tu es un expert en infrastructure LLVM. Ton rôle est de mapper le code C avec le code LLVM IR de manière chirurgicale.
+            Tu es un expert en infrastructure LLVM.
 
             RÈGLES DE FORMATAGE JSON :
-            1. Tu dois répondre UNIQUEMENT avec un objet JSON valide.
+            1. Tu dois répondre avec un objet JSON valide.
             2. Le JSON contient 3 listes de même longueur : "liste_c", "liste_ll", "liste_explication".
 
             STRUCTURE INTERNE :
@@ -74,18 +74,23 @@ def compile_code():
             RÈGLES D'ALIGNEMENT :
             - L'instruction liste_ll[i][j] doit avoir son explication à liste_explication[i][j].
             - Si une ligne C n'a pas d'équivalent IR (ex: une accolade seule), liste_ll[i] et liste_explication[i] doivent être des tableaux vides [].
-            - Les métadonnées de début de fichier (!llvm.module.flags, target triple, etc.) doivent être regroupées à l'index 0 avec une explication pour CHAQUE ligne.
 
             EXEMPLE TYPE :
             {
-                "liste_c": ["", "int main() {"],
+                "liste_c": ["", "int main() {",""],
                 "liste_ll": [
                     ["target triple = \\"x86_64\\"", "!0 = !{i32 1, !\\"wchar_size\\", i32 4}"],
-                    ["define i32 @main() {"]
+                    ["define i32 @main() {"],
+                    ["attributes #0 = { noinline nounwind optnone uwtable .."],
+                    ["!llvm.module.flags = !{!0, !1, !2, !3, !4}"],
+                    ["!5 = !{!"Debian clang version 14.0.6"}"]
                 ],
                 "liste_explication": [
                     ["Définit l'architecture cible", "Définit la taille du type wchar_t à 4 octets"],
-                    ["Début de la fonction principale"]
+                    ["Début de la fonction principale"],
+                    ["noinline : Interdit au compilateur d'insérer le code de cette fonction directement dans l'appelant (inlining)etnounwind : Indique que la fonction ne lancera jamais d'exception"],
+                    ["les fichiers sont compatibles entre eux."],
+                    [" C'est simplement la "signature" du compilateur qui a généré ce fichier. Ici, c'est la version de Clang fournie avec Debian 11/12."]
                 ]
             }
 
