@@ -43,6 +43,7 @@ export default function App() {
   const reponseIA = useRef(null); //Ensemble des données affichées
 
   const [explications, setExplications] = useState('');
+  const [explicationsPass, setExplicationsPass] = useState('');
   const [currentPass, setCurrentPass] = useState(0);
   const [message, setMessage] = useState('');
   const [nbPasses, setNbPasses] = useState(0);
@@ -245,8 +246,8 @@ export default function App() {
       const reponse = await fetch('/api/compile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          code: inputRef.current.state.doc.toString(), 
+        body: JSON.stringify({
+          code: inputRef.current.state.doc.toString(),
           lang: langageCode
         })
       })
@@ -419,6 +420,39 @@ export default function App() {
   const { ajouts, suppressions } = compterChangements(reponseIA.current?.["liste_diffsO" + niveau_optimisation.current] ?? [], currentPass)
 
 
+
+
+
+  const handleExplainDiffPass = async () => {
+    setMessage('explication en cours...');
+    try {
+      const reponse = await fetch('/api/expliquer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          llvm1: reponseIA.current?.["liste_passesO" + niveau_optimisation.current]?.[currentPass] ?? "",
+          llvm2: reponseIA.current?.["liste_passesO" + niveau_optimisation.current]?.[currentPass+1] ?? ""
+        })
+      })
+
+      const texteBrut = await reponse.text()
+
+      try {
+        const donnees = JSON.parse(texteBrut)
+        if (donnees.status === 'success') {
+          setExplicationsPass(donnees["explication"])
+        }
+        console.log(donnees);
+      } catch (erreurParse) {
+        setExplicationsPass("une erreur est survenue")
+      }
+
+    } catch (error) {
+      setExplicationsPass("une erreur est survenue")
+    }
+  }
+
+
   return (
     <>
       <div className="language-selector">
@@ -488,6 +522,8 @@ export default function App() {
       }}>
         {afficherFiltre ? t("modifPasses") : t("allPasses")}
       </button>
+
+      <button className="btnValider" onClick={handleExplainDiffPass}>{t('explain')}</button>
 
       <div className="flex-container">
         <button className="btnNavigation" onClick={() => handleNavigation("previous")}>{t('previous')}</button>
