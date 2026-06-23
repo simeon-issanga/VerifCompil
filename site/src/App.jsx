@@ -11,9 +11,9 @@ import { StreamLanguage, HighlightStyle, syntaxHighlighting } from "@codemirror/
 import { createLineHoverHighlighter, createLineDiffHiglighter, lineClickHandler, requestUpdateLines, resetHighlights } from "./lineClickHandler"
 import { useTranslation } from 'react-i18next';
 import i18n from './i18n.js'
-import { search, searchKeymap } from "@codemirror/search"
 import PassProgressBar from './PassProgressBar'
 import donnees from './donneesTest.json'
+import PassChart from './PassChart'
 
 const inputHighlighterCompartment = new Compartment();
 const outputHighlighterCompartment = new Compartment();
@@ -405,7 +405,7 @@ export default function App() {
 
   const listePass = reponseIA.current?.["liste_passesO" + niveau_optimisation.current] ?? []
   const titrePasse = afficherFiltre
-    ? `(${K.current} ${t("modification")}) pass ${currentPass + 1} → ${currentPass + 2} : ${(listePass[currentPass + 1] ?? '').match(/^\s*\*\*\* IR Dump After .* \*\*\*:?$/m)?.[0] ?? ''
+    ? `(${K.current} ${t("modification")}) pass ${currentPass} → ${currentPass + 1} : ${(listePass[currentPass + 1] ?? '').match(/^\s*\*\*\* IR Dump After .* \*\*\*:?$/m)?.[0] ?? ''
     }`
     : `pass ${currentPass + 1} / ${nbPasses} : ${(listePass[currentPass + 1] ?? '').match(/^\s*\*\*\* IR Dump After .* \*\*\*:?$/m)?.[0] ?? ''
     }`
@@ -474,7 +474,7 @@ export default function App() {
       </button>
 
       <div className="flex-container">
-        <button className="btnNavigation" onClick={() => handleNavigation("previous")}>previous</button>
+        <button className="btnNavigation" onClick={() => handleNavigation("previous")}>{t('previous')}</button>
         <div>
           <h2>
             {titrePasse}
@@ -484,12 +484,12 @@ export default function App() {
               onPassClick={(i) => setCurrentPass(i)}
               diffAvecChangements={diffAvecChangements}
             />
-            {ajouts > 0 && <span style={{ color: '#00ff26' }}>+{ajouts} lignes </span>}
-            {suppressions > 0 && <span style={{ color: '#ff0000' }}>-{suppressions} lignes</span>}
-            {ajouts === 0 && suppressions === 0 && <span style={{ color: '#888' }}>aucune modification</span>}
+            {ajouts > 0 && <span style={{ color: '#00ff26' }}>+{ajouts} {t('lines')} </span>}
+            {suppressions > 0 && <span style={{ color: '#ff0000' }}>-{suppressions} {t('lines')}</span>}
+            {ajouts === 0 && suppressions === 0 && <span style={{ color: '#888' }}>{t('NoModification')}</span>}
           </h2>
         </div>
-        <button className="btnNavigation" onClick={() => handleNavigation("next")}>next</button>
+        <button className="btnNavigation" onClick={() => handleNavigation("next")}>{t('next')}</button>
       </div>
 
       <div className="flex-container">
@@ -504,6 +504,17 @@ export default function App() {
           langage={t('code_version') + ` ${currentPass + 2} (${(reponseIA.current?.["perfO" + niveau_optimisation.current]?.[currentPass + 1] ?? "") === "inexécutable" ? t("inexecutable") : ((reponseIA.current?.["perfO" + niveau_optimisation.current]?.[currentPass + 1] + "s") ?? "")})`}
         />
       </div>
+
+      <PassChart
+        listeDiffs={reponseIA.current?.["liste_diffsO" + niveau_optimisation.current] ?? []}
+        listePasses={reponseIA.current?.["liste_passesO" + niveau_optimisation.current] ?? []}
+        diffAvecChangements={diffAvecChangements}
+        compterChangements={compterChangements}
+        added={t('added')}
+        deleted={t('deleted')}
+        total={t('total')}
+      />
+
     </>
   )
 }
