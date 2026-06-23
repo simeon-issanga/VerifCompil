@@ -524,6 +524,7 @@ export default function App() {
       </button>
 
       <button className="btnValider" onClick={handleExplainDiffPass}>{t('explain')}</button>
+      <div className="explications">{explicationsPass}</div>
 
       <div className="flex-container">
         <button className="btnNavigation" onClick={() => handleNavigation("previous")}>{t('previous')}</button>
