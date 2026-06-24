@@ -73,7 +73,7 @@ def genererPasses(file_c, uid, opt):
 
 def mesurePerf(file_ll, uid):
     fichExecuter = f"exe_{uid}"
-    
+    pb =""
     with open(file_ll, "r") as f:
         leFich = f.read()
     
@@ -92,6 +92,8 @@ def mesurePerf(file_ll, uid):
         res = subprocess.run(commande_bash, capture_output=True, check=True)
         if not res or res.returncode != 0:
             return res.stderr
+        else :
+            pb = res.stderr
 
         try:
             debut = perf_counter()
@@ -103,7 +105,7 @@ def mesurePerf(file_ll, uid):
             return f"Erreur exécution : {str(e)}"
     
     except Exception as e:
-        return f"Pb avec cmd bash : {str(e)}"
+        return f"Pb avec cmd bash : {str(e)} + : + {pb}"
     
     finally:
         if os.path.exists(FichPropre):
