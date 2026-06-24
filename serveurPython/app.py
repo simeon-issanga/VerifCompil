@@ -228,8 +228,8 @@ def expliquerDiffPass():
     except Exception as e : 
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route('/api/health')
-def health():
+@app.route('/api/test')
+def test():
     return {"status": "ok"}, 200
 
 if __name__ == '__main__':
