@@ -51,7 +51,7 @@ jobs:
 
       - name: attente du build
         run: |
-          timeout 60s bash -c 'until curl -s http://localhost:8080/api/test; do sleep 2; done' || (docker compose -f docker-compose.ci.yaml logs && exit 1)
+          timeout 60s bash -c 'until curl -s http://socarrat.unizar.es:8080/api/test; do sleep 2; done' || (docker compose -f docker-compose.ci.yaml logs && exit 1)
 
       #- name: Exécuter les tests d'intégration
       #  run: python3 tests/testCompil.py
