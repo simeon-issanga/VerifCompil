@@ -71,7 +71,7 @@ services:
     image: postgres:latest
     container_name: bdd-verif_compil
     restart: always
-    env_files :
+    env_file :
       - config/env/.env
     volumes:
       -  /home/simeon/VerifCompil/bdd_data:/var/lib/postgresql 
