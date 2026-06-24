@@ -41,6 +41,7 @@ def genererPasses(file_c, uid, opt):
     perf = []
 
     leContenu, vieux_chemin = genererLLVM(file_c, uid, opt)
+    listP.append(leContenu)
 
     if res and res.stderr:
         segments = res.stderr.split("*** IR Dump After")
@@ -84,17 +85,18 @@ def mesurePerf(file_ll, uid):
         f.write(contenuPropre)   
     
     try:
-        commande_bash = ["clang++", FichPropre, "-o", fichExecuter]
-        res = executer(commande_bash)
 
+
+        commande_bash = ["clang++", FichPropre, "-o", fichExecuter]
+        res = subprocess.run(commande_bash, capture_output=True, check=True)
         if not res or res.returncode != 0:
-            return "inexécutable"
+            return res.stderr
 
         try:
             debut = perf_counter()
-            subprocess.run([f"./{fichExecuter}"], capture_output=True, timeout=10)
+            subprocess.run([f"./{fichExecuter}"], capture_output=True, timeout=15)
             fin = perf_counter()
-            return f"{round((fin - debut) * 1000, 5)}"
+            return f"{round((fin - debut) * 1000, 5)} s"
         
         except Exception as e:
             return f"Erreur exécution : {str(e)}"
