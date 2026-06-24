@@ -84,7 +84,7 @@ services:
     container_name: adminer-verif_compil
     restart: always
     ports:
-      - 4321:8080 
+      - 7777:8080 
     networks: 
       - verif_compil
     
