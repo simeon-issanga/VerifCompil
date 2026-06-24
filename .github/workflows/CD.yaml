@@ -1,5 +1,5 @@
 name: CD-Pipeline
-# version pour avoir une pipeline
+
 on:
   workflow_run:
     workflows: ["CI-VerifCompil"] 
@@ -10,17 +10,17 @@ on:
 jobs:
   deploy:
     name: Deploiement serveur
-    # si CI ok alors 
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: self-hosted 
     steps:
-      - name: Verification code
+      - name: MaJ code
         uses: actions/checkout@v4
 
-      - name: Crée dossier config et fichier .env
+      - name: config .env
         run: |
           mkdir -p config/env
           echo "${{ secrets.ENV_FILE_CONTENT }}" > config/env/.env
+          echo "${{ secrets.ENV_FILE_CONTENT }}" > .env
           chmod 600 config/env/.env
 
       - uses: dorny/paths-filter@v3
@@ -33,15 +33,25 @@ jobs:
               - 'site/**'
             nginx:
               - 'config/nginx/**'
+            docker:
+              - 'docker-compose.yml'
 
-      - name: recompose Python
-        if: steps.changes.outputs.python == 'true'
-        run: | 
-          docker compose up --build -d pythonserver 
-
-      - name: recompose les services web
-        if: steps.changes.outputs.site == 'true' || steps.changes.outputs.nginx == 'true'
+      - name: MaJ services
         run: |
-          docker compose up --build -d web nginx-proxy
+          if [ "${{ steps.changes.outputs.python }}" == "true" ]; then
+            echo "rebuild backend"
+            docker compose up -d --build pythonserver
+          fi
 
-      
+          if [ "${{ steps.changes.outputs.site }}" == "true" ] || [ "${{ steps.changes.outputs.nginx }}" == "true" ]; then
+            echo "rebuild web"
+            docker compose up -d --build web nginx-proxy
+          fi
+          
+          if [ "${{ steps.changes.outputs.docker }}" == "true" ]; then
+            echo "remonter le compose"
+            docker compose up -d
+          fi
+
+      - name: supp images inutiles
+        run: docker image prune -f

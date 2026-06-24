@@ -1,67 +1,71 @@
-name: CI-VerifCompil         
+name: CI-VerifCompil
 
 on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]                  
+    branches: [main]
 
 jobs:
-  verification-projet:        
-    runs-on: ubuntu-latest   
+  lesTestsU:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-    steps:                      
-      - name: Recup fichier
-        uses: actions/checkout@v4
-
-      - name: Configurer Python
+      - name: Config python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      - name: Installer les dependances Python
+      - name: Installer les outils de test
         run: |
-          pip install requests flask openai 
+          pip install flake8 pytest requests flask openai 
+          sudo apt-get update && sudo apt-get install -y clang
 
-      - name: Test de la fonction de compilation (Clang)
+      - name: Vérification syntaxe 
         run: |
-          sudo apt-get install -y clang
-          # Assure-toi que ce fichier existe dans /tests/
-          python3 tests/testClang.py
+          #si erreur synthaxe py
+          flake8 serveurPython --count --select=E9,F63,F7,F82 --show-source --statistics
 
-      #- name: Vérification syntaxe Backend
-      #  run: |
-      #    cd serveurPython
-      #    # Correction : le module est 'py_compile', pas 'compile_code'
-      #    python3 -m py_compile app.py 
+      # revoir les tests unitaires
+      #- name: Test logique compilation (Clang)
+      #  run: python3 tests/testClang.py
 
-      - name: Préparer faux .env 
+  dockerTest:
+    needs: lesTestsU
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: .env de test
         run: |
-          mkdir -p config/env
-          echo "API_KEY_DEEPSEEK=fake_key_for_ci" > config/env/.env
+          echo "DB_USER=admin" > .env
+          echo "DB_PASSWORD=password123" >> .env
+          echo "DB_NAME=verif_bdd" >> .env
+          echo "API_KEY_DEEPSEEK=fake_key" >> .env
 
-      - name: Lancer les conteneurs pour test
-        run: docker compose -f docker-compose.ci.yaml up -d
+      - name: Build avec le compose ci
+        run: |
+         
+          docker compose -f docker-compose.ci.yaml up -d --build
 
-      - name: Attendre que le serveur soit prêt
-        run: sleep 20 # On augmente un peu pour être sûr
+      - name: attente du build
+        run: |
+          timeout 60s bash -c 'until curl -s http://localhost:8080/api/health; do sleep 2; done' || (docker compose -f docker-compose.ci.yaml logs && exit 1)
 
-      #- name: tests des fonctions back
+      #- name: Exécuter les tests d'intégration
       #  run: python3 tests/testCompil.py
       #  env:
       #    TEST_SERVER_URL: http://localhost:8080
 
-      #- name: Afficher les logs en cas d'échec
-      #  if: failure() # S'exécute SEULEMENT si une étape précédente a raté
-      #  run: |
-      #    docker compose -f docker-compose.ci.yaml ps
-      #    docker compose -f docker-compose.ci.yaml logs pythonserver
-      #    docker compose -f docker-compose.ci.yaml logs nginx-proxy
+      - name: Afficher les logs en cas d'échec
+        if: failure()
+        run: |
+          docker compose -f docker-compose.ci.yaml ps
+          docker compose -f docker-compose.ci.yaml logs pythonserver
+          docker compose -f docker-compose.ci.yaml logs db
 
-      - name: Arrêter les conteneurs
+      - name: Clean up
+        if: always()
         run: docker compose -f docker-compose.ci.yaml down
-
-# tester le front mais c compliqué
-
-      - name: Resultat
-        run: echo "CI terminée"
+        
