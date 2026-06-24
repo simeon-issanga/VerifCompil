@@ -74,6 +74,7 @@ services:
     volumes:
       -  /home/simeon/VerifCompil/bdd_data:/var/lib/postgresql 
     environment:
+      POSTGRES_USER: admin
       POSTGRES_PASSWORD: example 
       POSTGRES_DB: verif_db
     networks:
