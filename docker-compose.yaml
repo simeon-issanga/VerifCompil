@@ -23,8 +23,7 @@ services:
     build: ./site
     container_name: frontend-verif_compil
     restart: unless-stopped
-    env_file:
-      - config/env/.env
+    
     volumes:
       - ./site/:/app
       - /app/node_modules
