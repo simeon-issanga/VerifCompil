@@ -46,6 +46,7 @@ services:
       - '5000:5000'
     depends_on:
       - ollama
+      - db
     networks:
       - verif_compil
 
@@ -64,6 +65,29 @@ services:
       - pythonserver
     networks:
       - verif_compil
+    
+  #bdd
+  db:
+    image: postgres:latest
+    container_name: bdd-verif_compil
+    restart: always
+    volumes:
+      - ./bdd_data:/var/lib/postgresql/data 
+    environment:
+      POSTGRES_PASSWORD: example 
+      POSTGRES_DB: verif_db
+    networks:
+      - verif_compil
+
+  adminer:
+    image: adminer
+    container_name: adminer-verif_compil
+    restart: always
+    ports:
+      - 4321:8080 
+    networks: 
+      - verif_compil
+    
 
 networks:
   verif_compil:
