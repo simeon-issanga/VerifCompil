@@ -3,7 +3,9 @@ import uuid
 import ollama
 import json
 import os
+import time
 
+from fonctions.performances import *
 app = Flask(__name__)
 
 client = ollama.Client(host='http://ollama:11434')
@@ -37,7 +39,7 @@ def compile_code():
         with open(file_path, "w") as file:
             file.write(code)
 
-       #0
+        #0
         llvm0, path0 = fct.genererLLVM(file_path, uid, 0)
         passes0, diffs0,perf0 = fct.genererPasses(file_path, uid, 0)
         fichSupp.append(path0)
@@ -100,6 +102,10 @@ def compile_code():
                 - N'inclus jamais de texte ou d'explications en dehors de l'objet JSON.
 
         """
+        
+        # Démarrage des monitors
+        gpu_proc, gpu_lines, gpu_thread = start_gpu_monitor()
+        perf_proc = start_perf_stat(os.getpid())   # PID du process Flask courant
 
         reponse = client.chat(
             model="deepseek-r1:14b",
@@ -113,6 +119,25 @@ def compile_code():
             }
         )
         
+        
+        # Arrêt et collecte
+        gpu_stats  = stop_gpu_monitor(gpu_proc, gpu_lines, gpu_thread)
+        cpu_stats  = stop_perf_stat(perf_proc)
+        # Métriques Ollama natives
+        perf_ia = {
+            "inference_total_ms":  reponse.get("total_duration", 0)      / 1e6,
+            "prompt_eval_ms":      reponse.get("prompt_eval_duration", 0) / 1e6,
+            "generation_ms":       reponse.get("eval_duration", 0)        / 1e6,
+            "tokens_generated":    reponse.get("eval_count", 0),
+            "tokens_per_sec":      round(
+                reponse.get("eval_count", 0) /
+                max(reponse.get("eval_duration", 1) / 1e9, 1e-9), 2
+            ),
+            "gpu": gpu_stats,
+            "cpu": cpu_stats,
+        }
+        
+        
         content = reponse['message']['content']
         clean_json = content.replace("```json", "").replace("```", "").strip()
 
@@ -121,6 +146,7 @@ def compile_code():
         
         return jsonify({
             "status": "success", 
+            "perf_ia": perf_ia,
             "liste_c": donnees_ia.get("liste_c", []),
             "optimisations" :{
                 "00": 
@@ -201,6 +227,8 @@ def expliquerDiffPass():
         })
     except Exception as e : 
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
