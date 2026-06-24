@@ -71,12 +71,14 @@ services:
     image: postgres:latest
     container_name: bdd-verif_compil
     restart: always
+    env_files :
+      - config/env/.env
     volumes:
       -  /home/simeon/VerifCompil/bdd_data:/var/lib/postgresql 
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: example 
-      POSTGRES_DB: verif_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     networks:
       - verif_compil
 
