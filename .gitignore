@@ -76,3 +76,9 @@ dist-ssr
 *.sw?
 
 
+# bdd
+bdd_data/
+ollama_data/
+node_modules/
+.env
+
