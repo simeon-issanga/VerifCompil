@@ -48,6 +48,14 @@ services:
       - db
     networks:
       - verif_compil
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+          
 
   # Routeur Nginx
   nginx-proxy:
