@@ -106,5 +106,3 @@ def parse_perf_output(stderr):
         result["ipc"] = round(result["instructions"] / result["cycles"], 3)
 
     return result if result else None
-
-
