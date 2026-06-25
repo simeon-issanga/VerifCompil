@@ -40,7 +40,7 @@ jobs:
         run: |
           if [ "${{ steps.changes.outputs.python }}" == "true" ]; then
             echo "rebuild backend"
-            docker compose up -d --build pythonserver
+            docker compose up -d --build
           fi
 
           if [ "${{ steps.changes.outputs.site }}" == "true" ] || [ "${{ steps.changes.outputs.nginx }}" == "true" ]; then
