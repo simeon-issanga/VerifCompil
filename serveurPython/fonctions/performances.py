@@ -20,6 +20,9 @@ def stop_gpu_monitor(proc, lines, reader_thread):
     proc.terminate()
     proc.wait()
     reader_thread.join(timeout=2)
+    print(f"[GPU DEBUG] {len(lines)} lignes collectées :")
+    for l in lines:
+        print(f"  {repr(l)}")
     return parse_dmon_output(lines)
 
 def parse_dmon_output(lines):
@@ -99,12 +102,10 @@ def start_perf_stat(pid):
     return proc
 
 def stop_perf_stat(proc):
-    if proc is None:
-        return {"error": "perf non disponible"}
     proc.terminate()
-    # communicate() gère le drain du pipe ET attend la fin — pas de deadlock
-    _, stderr = proc.communicate(timeout=5)
-    print(f"[PERF DEBUG] stderr :\n{stderr}")
+    proc.wait()
+    stderr = proc.stderr.read()
+    print(f"[PERF DEBUG] stderr brut :\n{stderr}")
     return parse_perf_output(stderr)
 
 def parse_perf_output(stderr):
