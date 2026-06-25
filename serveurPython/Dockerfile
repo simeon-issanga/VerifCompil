@@ -6,9 +6,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /app
 
-#SHELL ["/bin/bash", "-c"]
 
-RUN apt-get update && apt-get install -y clang llvm 
+RUN apt-get update && apt-get install -y clang llvm && apt-get install linux-perf
 #&& rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
