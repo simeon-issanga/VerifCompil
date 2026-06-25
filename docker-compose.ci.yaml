@@ -12,7 +12,6 @@ services:
     container_name: ollama-verif-ci
    
 
-  # Backend Python
   pythonserver:
     build: ./serveurPython
     container_name: backend-verif-ci
