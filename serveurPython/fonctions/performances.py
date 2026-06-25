@@ -23,43 +23,68 @@ def stop_gpu_monitor(proc, lines, reader_thread):
     return parse_dmon_output(lines)
 
 def parse_dmon_output(lines):
-    """
-    dmon produit des lignes comme :
-    # gpu   pwr  gtemp  mtemp    sm   mem   enc   dec  mclk  pclk
-        0   145     72      -    87    91     0     0  9501  1980
-    """
     samples = []
+    headers = []
+
     for line in lines:
-        if line.startswith("#") or not line.strip():
+        stripped = line.strip()
+        if not stripped:
             continue
-        vals = line.split()
-        if len(vals) < 6:
+
+        # Ligne de header : commence par "# gpu" ou "# Id"
+        if stripped.startswith("#"):
+            # Nettoie le # et récupère les noms de colonnes
+            headers = stripped.lstrip("#").split()
             continue
+
+        if not headers:
+            continue
+
+        vals = stripped.split()
+        if len(vals) != len(headers):
+            continue
+
+        row = dict(zip(headers, vals))
         try:
-            samples.append({
-                "gpu_util_pct": int(vals[3]),   # sm  = shader/compute
-                "mem_util_pct": int(vals[4]),   # mem = bande passante
-                "power_w":      float(vals[1]), # pwr = watts
-            })
+            sample = {}
+            # sm = shader/compute utilization
+            if "sm" in row and row["sm"] != "-":
+                sample["gpu_util_pct"] = int(row["sm"])
+            # mem = memory bandwidth utilization
+            if "mem" in row and row["mem"] != "-":
+                sample["mem_util_pct"] = int(row["mem"])
+            # pwr = power draw
+            if "pwr" in row and row["pwr"] != "-":
+                sample["power_w"] = float(row["pwr"])
+
+            if sample:
+                samples.append(sample)
         except ValueError:
             continue
+
+    print(f"[GPU DEBUG] {len(samples)} samples valides parsés")
 
     if not samples:
         return None
 
-    power_values = [s["power_w"] for s in samples]
-    duration_s   = len(samples)  # 1 sample/sec avec -d 1
+    power_values  = [s["power_w"]      for s in samples if "power_w"      in s]
+    gpu_values    = [s["gpu_util_pct"] for s in samples if "gpu_util_pct" in s]
+    mem_values    = [s["mem_util_pct"] for s in samples if "mem_util_pct" in s]
+    duration_s    = len(samples)
 
-    return {
-        "samples_count":    len(samples),
-        "avg_gpu_util_pct": round(sum(s["gpu_util_pct"] for s in samples) / len(samples), 1),
-        "avg_mem_util_pct": round(sum(s["mem_util_pct"] for s in samples) / len(samples), 1),
-        "peak_gpu_util_pct":max(s["gpu_util_pct"] for s in samples),
-        "avg_power_w":      round(sum(power_values) / len(power_values), 1),
-        "peak_power_w":     round(max(power_values), 1),
-        "energy_joules":    round(sum(power_values) * duration_s / len(power_values) * duration_s, 2),
-        # énergie ≈ puissance_moy × durée
-    }
+    result = {"samples_count": len(samples)}
+    if gpu_values:
+        result["avg_gpu_util_pct"]  = round(sum(gpu_values) / len(gpu_values), 1)
+        result["peak_gpu_util_pct"] = max(gpu_values)
+    if mem_values:
+        result["avg_mem_util_pct"]  = round(sum(mem_values) / len(mem_values), 1)
+    if power_values:
+        avg_power = sum(power_values) / len(power_values)
+        result["avg_power_w"]    = round(avg_power, 1)
+        result["peak_power_w"]   = round(max(power_values), 1)
+        result["energy_joules"]  = round(avg_power * duration_s, 2)
+
+    return result
 
 
 #Fonctions pour surveiller l'utilisation du CPU
@@ -74,10 +99,12 @@ def start_perf_stat(pid):
     return proc
 
 def stop_perf_stat(proc):
-    """Arrête perf stat et parse sa sortie stderr."""
+    if proc is None:
+        return {"error": "perf non disponible"}
     proc.terminate()
-    proc.wait()
-    stderr = proc.stderr.read()
+    # communicate() gère le drain du pipe ET attend la fin — pas de deadlock
+    _, stderr = proc.communicate(timeout=5)
+    print(f"[PERF DEBUG] stderr :\n{stderr}")
     return parse_perf_output(stderr)
 
 def parse_perf_output(stderr):
