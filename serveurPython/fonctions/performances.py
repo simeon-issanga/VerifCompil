@@ -34,10 +34,12 @@ def parse_dmon_output(lines):
         if not stripped:
             continue
 
-        # Ligne de header : commence par "# gpu" ou "# Id"
         if stripped.startswith("#"):
-            # Nettoie le # et récupère les noms de colonnes
-            headers = stripped.lstrip("#").split()
+            cols = stripped.lstrip("#").split()
+            # On ne garde que la ligne qui contient "gpu" — c'est le vrai header
+            if "gpu" in cols or "Idx" in cols:
+                # Normalise : "Idx" -> "gpu"
+                headers = ["gpu" if c == "Idx" else c.lower() for c in cols]
             continue
 
         if not headers:
@@ -50,16 +52,12 @@ def parse_dmon_output(lines):
         row = dict(zip(headers, vals))
         try:
             sample = {}
-            # sm = shader/compute utilization
-            if "sm" in row and row["sm"] != "-":
+            if row.get("sm", "-") != "-":
                 sample["gpu_util_pct"] = int(row["sm"])
-            # mem = memory bandwidth utilization
-            if "mem" in row and row["mem"] != "-":
+            if row.get("mem", "-") != "-":
                 sample["mem_util_pct"] = int(row["mem"])
-            # pwr = power draw
-            if "pwr" in row and row["pwr"] != "-":
+            if row.get("pwr", "-") != "-":
                 sample["power_w"] = float(row["pwr"])
-
             if sample:
                 samples.append(sample)
         except ValueError:
@@ -70,10 +68,10 @@ def parse_dmon_output(lines):
     if not samples:
         return None
 
-    power_values  = [s["power_w"]      for s in samples if "power_w"      in s]
-    gpu_values    = [s["gpu_util_pct"] for s in samples if "gpu_util_pct" in s]
-    mem_values    = [s["mem_util_pct"] for s in samples if "mem_util_pct" in s]
-    duration_s    = len(samples)
+    power_values = [s["power_w"]      for s in samples if "power_w"      in s]
+    gpu_values   = [s["gpu_util_pct"] for s in samples if "gpu_util_pct" in s]
+    mem_values   = [s["mem_util_pct"] for s in samples if "mem_util_pct" in s]
+    duration_s   = len(samples)
 
     result = {"samples_count": len(samples)}
     if gpu_values:
@@ -83,52 +81,58 @@ def parse_dmon_output(lines):
         result["avg_mem_util_pct"]  = round(sum(mem_values) / len(mem_values), 1)
     if power_values:
         avg_power = sum(power_values) / len(power_values)
-        result["avg_power_w"]    = round(avg_power, 1)
-        result["peak_power_w"]   = round(max(power_values), 1)
-        result["energy_joules"]  = round(avg_power * duration_s, 2)
+        result["avg_power_w"]   = round(avg_power, 1)
+        result["peak_power_w"]  = round(max(power_values), 1)
+        result["energy_joules"] = round(avg_power * duration_s, 2)
 
     return result
 
-
-#Fonctions pour surveiller l'utilisation du CPU
 def start_perf_stat(pid):
-    """Attache perf stat au PID donné."""
     proc = subprocess.Popen(
-        ["perf", "stat", "-p", str(pid),"-e", "cycles,instructions,cache-misses,cache-references,task-clock"],
+        [
+            "perf", "stat",
+            "-e", "cycles,instructions,cache-misses,cache-references,task-clock",
+            "-p", str(pid)
+            # pas de "--" ici — c'est le mode attach, pas wrapper
+        ],
         stdout=subprocess.DEVNULL,
-        stderr=subprocess.PIPE,   # perf stat écrit sur stderr
+        stderr=subprocess.PIPE,
         text=True
     )
     return proc
 
 def stop_perf_stat(proc):
+    if proc is None:
+        return {"error": "perf non disponible"}
     proc.terminate()
-    proc.wait()
-    stderr = proc.stderr.read()
-    print(f"[PERF DEBUG] stderr brut :\n{stderr}")
+    _, stderr = proc.communicate(timeout=5)
+    print(f"[PERF DEBUG] stderr :\n{stderr}")
     return parse_perf_output(stderr)
 
 def parse_perf_output(stderr):
-    """
-    perf stat produit sur stderr :
-        1,234,567,890      cycles
-        847,291,033      instructions    #  0.69  insn per cycle
-        142.35 msec  task-clock
-    """
     result = {}
+
     patterns = {
-        "cycles":           r"([\d,]+)\s+cycles",
-        "instructions":     r"([\d,]+)\s+instructions",
-        "cache_misses":     r"([\d,]+)\s+cache-misses",
-        "cache_references": r"([\d,]+)\s+cache-references",
-        "task_clock_ms":    r"([\d,\.]+)\s+msec\s+task-clock",
+        "task_clock_ms":    r"([\d\s,\.]+)\s+msec\s+task-clock",
+        "cycles":           r"([\d\s,]+)\s+cycles",
+        "instructions":     r"([\d\s,]+)\s+instructions",
+        "cache_misses":     r"([\d\s,]+)\s+cache-misses",
+        "cache_references": r"([\d\s,]+)\s+cache-references",
+        "context_switches": r"([\d\s,]+)\s+context-switches",
         "elapsed_s":        r"([\d,\.]+)\s+seconds time elapsed",
+        "user_s":           r"([\d,\.]+)\s+seconds user",
+        "sys_s":            r"([\d,\.]+)\s+seconds sys",
     }
+
     for key, pattern in patterns.items():
         m = re.search(pattern, stderr)
         if m:
-            val = m.group(1).replace(",", "")
-            result[key] = float(val) if "." in val else int(val)
+            # Supprime espaces et virgules (séparateurs de milliers)
+            val = m.group(1).replace(",", "").replace(" ", "").strip()
+            try:
+                result[key] = float(val) if "." in val else int(val)
+            except ValueError:
+                continue
 
     if "instructions" in result and "cycles" in result and result["cycles"] > 0:
         result["ipc"] = round(result["instructions"] / result["cycles"], 3)
