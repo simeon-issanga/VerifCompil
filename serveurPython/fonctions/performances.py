@@ -25,24 +25,30 @@ def stop_gpu_monitor(proc, lines, reader_thread):
         print(f"  {repr(l)}")
     return parse_dmon_output(lines)
 
+
 def parse_dmon_output(lines):
     samples = []
-    headers = []
+    headers = None  # None = pas encore vu le header
 
     for line in lines:
         stripped = line.strip()
+        
+        if stripped and not stripped.startswith("#"):
+            vals = stripped.split()
+            print(f"  vals={len(vals)} headers={len(headers)} → {vals[:6]}")
+        
         if not stripped:
             continue
 
         if stripped.startswith("#"):
             cols = stripped.lstrip("#").split()
-            # On ne garde que la ligne qui contient "gpu" — c'est le vrai header
-            if "gpu" in cols or "Idx" in cols:
-                # Normalise : "Idx" -> "gpu"
-                headers = ["gpu" if c == "Idx" else c.lower() for c in cols]
-            continue
+            # Ne prendre que le premier header "gpu/Idx" — ignorer les répétitions
+            if headers is None and ("gpu" in cols or "Idx" in cols):
+                headers = [c.lower() for c in cols]
+                headers = ["gpu" if c == "idx" else c for c in headers]
+            continue  # toujours skipper les lignes #
 
-        if not headers:
+        if headers is None:
             continue
 
         vals = stripped.split()
@@ -87,19 +93,24 @@ def parse_dmon_output(lines):
 
     return result
 
+
 def start_perf_stat(pid):
-    proc = subprocess.Popen(
-        [
-            "perf", "stat",
-            "-e", "cycles,instructions,cache-misses,cache-references,task-clock",
-            "-p", str(pid)
-            # pas de "--" ici — c'est le mode attach, pas wrapper
-        ],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.PIPE,
-        text=True
-    )
-    return proc
+    try:
+        proc = subprocess.Popen(
+            [
+                "perf", "stat",
+                "-e", "cycles,instructions,cache-misses,task-clock",
+                "-p", str(pid),
+                "--per-thread"   # surveille tous les threads du process
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        return proc
+    except FileNotFoundError:
+        return None
+
 
 def stop_perf_stat(proc):
     if proc is None:
@@ -109,32 +120,40 @@ def stop_perf_stat(proc):
     print(f"[PERF DEBUG] stderr :\n{stderr}")
     return parse_perf_output(stderr)
 
+
 def parse_perf_output(stderr):
     result = {}
 
-    patterns = {
-        "task_clock_ms":    r"([\d\s,\.]+)\s+msec\s+task-clock",
-        "cycles":           r"([\d\s,]+)\s+cycles",
-        "instructions":     r"([\d\s,]+)\s+instructions",
-        "cache_misses":     r"([\d\s,]+)\s+cache-misses",
-        "cache_references": r"([\d\s,]+)\s+cache-references",
-        "context_switches": r"([\d\s,]+)\s+context-switches",
-        "elapsed_s":        r"([\d,\.]+)\s+seconds time elapsed",
-        "user_s":           r"([\d,\.]+)\s+seconds user",
-        "sys_s":            r"([\d,\.]+)\s+seconds sys",
-    }
+    # Avec --per-thread, il peut y avoir plusieurs lignes par métrique
+    # On somme les cycles/instructions et on prend le max du elapsed
+    cycles_total       = 0
+    instructions_total = 0
+    task_clock_total   = 0.0
 
-    for key, pattern in patterns.items():
-        m = re.search(pattern, stderr)
+    for line in stderr.splitlines():
+        line = line.strip()
+
+        m = re.search(r"([\d\s]+)\s+cycles", line)
         if m:
-            # Supprime espaces et virgules (séparateurs de milliers)
-            val = m.group(1).replace(",", "").replace(" ", "").strip()
-            try:
-                result[key] = float(val) if "." in val else int(val)
-            except ValueError:
-                continue
+            cycles_total += int(m.group(1).replace(" ", "").replace(",", ""))
 
-    if "instructions" in result and "cycles" in result and result["cycles"] > 0:
+        m = re.search(r"([\d\s]+)\s+instructions", line)
+        if m:
+            instructions_total += int(m.group(1).replace(" ", "").replace(",", ""))
+
+        m = re.search(r"([\d\s,\.]+)\s+msec\s+task-clock", line)
+        if m:
+            task_clock_total += float(m.group(1).replace(" ", "").replace(",", ""))
+
+    m = re.search(r"([\d,\.]+)\s+seconds time elapsed", stderr)
+    elapsed = float(m.group(1).replace(",", "")) if m else None
+
+    if cycles_total:       result["cycles"]        = cycles_total
+    if instructions_total: result["instructions"]   = instructions_total
+    if task_clock_total:   result["task_clock_ms"]  = round(task_clock_total, 2)
+    if elapsed:            result["elapsed_s"]       = elapsed
+
+    if result.get("cycles", 0) > 0 and result.get("instructions", 0) > 0:
         result["ipc"] = round(result["instructions"] / result["cycles"], 3)
 
     return result if result else None
