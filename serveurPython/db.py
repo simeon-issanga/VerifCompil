@@ -3,11 +3,11 @@ import os
 
 def get_connection():
     return psycopg2.connect(
-        dbname="",
-        user="",
-        password= "",
-        host="",
-        port=""
+        dbname=os.environ.get("DB_NAME"),
+        user=os.environ.get("DB_USER"),
+        password=os.environ.get("DB_PASSWORD"),
+        host="db"
+        port=os.environ.get("DB_PORT")
     )
 
 def insert_prompt(perf_ia: dict, modele_id: int):
