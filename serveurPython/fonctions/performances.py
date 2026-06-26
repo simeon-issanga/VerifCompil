@@ -2,7 +2,6 @@ import subprocess
 import threading
 import re
 
-#Fonctions pour surveiller l'utilisation du GPU
 def start_gpu_monitor():
     proc = subprocess.Popen(
         ["nvidia-smi", "dmon", "-s", "pucvmet", "-d", "1"],
@@ -20,33 +19,23 @@ def stop_gpu_monitor(proc, lines, reader_thread):
     proc.terminate()
     proc.wait()
     reader_thread.join(timeout=2)
-    print(f"[GPU DEBUG] {len(lines)} lignes collectées :")
-    for l in lines:
-        print(f"  {repr(l)}")
     return parse_dmon_output(lines)
-
 
 def parse_dmon_output(lines):
     samples = []
-    headers = None  # None = pas encore vu le header
+    headers = None
 
     for line in lines:
         stripped = line.strip()
-        
-        if stripped and not stripped.startswith("#"):
-            vals = stripped.split()
-            print(f"  vals={len(vals)} headers={len(headers)} → {vals[:6]}")
-        
         if not stripped:
             continue
 
         if stripped.startswith("#"):
             cols = stripped.lstrip("#").split()
-            # Ne prendre que le premier header "gpu/Idx" — ignorer les répétitions
             if headers is None and ("gpu" in cols or "Idx" in cols):
                 headers = [c.lower() for c in cols]
                 headers = ["gpu" if c == "idx" else c for c in headers]
-            continue  # toujours skipper les lignes #
+            continue
 
         if headers is None:
             continue
@@ -68,8 +57,6 @@ def parse_dmon_output(lines):
                 samples.append(sample)
         except ValueError:
             continue
-
-    print(f"[GPU DEBUG] {len(samples)} samples valides parsés")
 
     if not samples:
         return None
@@ -101,7 +88,7 @@ def start_perf_stat(pid):
                 "perf", "stat",
                 "-e", "cycles,instructions,cache-misses,task-clock",
                 "-p", str(pid),
-                "--per-thread"   # surveille tous les threads du process
+                "--per-thread"
             ],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.PIPE,
@@ -111,47 +98,72 @@ def start_perf_stat(pid):
     except FileNotFoundError:
         return None
 
-
 def stop_perf_stat(proc):
     if proc is None:
         return {"error": "perf non disponible"}
     proc.terminate()
     _, stderr = proc.communicate(timeout=5)
-    print(f"[PERF DEBUG] stderr :\n{stderr}")
     return parse_perf_output(stderr)
 
-
 def parse_perf_output(stderr):
+    """
+    Avec --per-thread, chaque ligne ressemble à :
+        flask-1      409107      cycles
+        flask-1        0.63 msec task-clock
+    On agrège toutes les valeurs par métrique.
+    """
     result = {}
-
-    # Avec --per-thread, il peut y avoir plusieurs lignes par métrique
-    # On somme les cycles/instructions et on prend le max du elapsed
-    cycles_total       = 0
-    instructions_total = 0
-    task_clock_total   = 0.0
+    totals = {
+        "cycles":       0,
+        "instructions": 0,
+        "cache_misses": 0,
+        "task_clock_ms": 0.0,
+    }
 
     for line in stderr.splitlines():
         line = line.strip()
 
-        m = re.search(r"([\d\s]+)\s+cycles", line)
+        # Retire le préfixe thread (ex: "flask-1") s'il est présent
+        # Format : "<thread-name>   <valeur>   <métrique>"
+        # ou sans thread : "   <valeur>   <métrique>"
+        m = re.match(r'^[\w\-]+\s+(.*)', line)
+        normalized = m.group(1).strip() if m else line
+
+        # cycles
+        m = re.search(r'^([\d\s,]+)\s+cycles', normalized)
         if m:
-            cycles_total += int(m.group(1).replace(" ", "").replace(",", ""))
+            totals["cycles"] += int(m.group(1).replace(" ", "").replace(",", ""))
+            continue
 
-        m = re.search(r"([\d\s]+)\s+instructions", line)
+        # instructions
+        m = re.search(r'^([\d\s,]+)\s+instructions', normalized)
         if m:
-            instructions_total += int(m.group(1).replace(" ", "").replace(",", ""))
+            totals["instructions"] += int(m.group(1).replace(" ", "").replace(",", ""))
+            continue
 
-        m = re.search(r"([\d\s,\.]+)\s+msec\s+task-clock", line)
+        # cache-misses
+        m = re.search(r'^([\d\s,]+)\s+cache-misses', normalized)
         if m:
-            task_clock_total += float(m.group(1).replace(" ", "").replace(",", ""))
+            totals["cache_misses"] += int(m.group(1).replace(" ", "").replace(",", ""))
+            continue
 
-    m = re.search(r"([\d,\.]+)\s+seconds time elapsed", stderr)
-    elapsed = float(m.group(1).replace(",", "")) if m else None
+        # task-clock (en msec)
+        m = re.search(r'^([\d\s,\.]+)\s+msec\s+task-clock', normalized)
+        if m:
+            totals["task_clock_ms"] += float(m.group(1).replace(" ", "").replace(",", ""))
+            continue
 
-    if cycles_total:       result["cycles"]        = cycles_total
-    if instructions_total: result["instructions"]   = instructions_total
-    if task_clock_total:   result["task_clock_ms"]  = round(task_clock_total, 2)
-    if elapsed:            result["elapsed_s"]       = elapsed
+    # elapsed time — ligne sans préfixe thread
+    elapsed = None
+    m = re.search(r'([\d\.]+)\s+seconds time elapsed', stderr)
+    if m:
+        elapsed = float(m.group(1))
+
+    if totals["cycles"]:        result["cycles"]         = totals["cycles"]
+    if totals["instructions"]:  result["instructions"]   = totals["instructions"]
+    if totals["cache_misses"]:  result["cache_misses"]   = totals["cache_misses"]
+    if totals["task_clock_ms"]: result["task_clock_ms"]  = round(totals["task_clock_ms"], 2)
+    if elapsed:                 result["elapsed_s"]       = elapsed
 
     if result.get("cycles", 0) > 0 and result.get("instructions", 0) > 0:
         result["ipc"] = round(result["instructions"] / result["cycles"], 3)
