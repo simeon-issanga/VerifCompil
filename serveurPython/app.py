@@ -4,6 +4,7 @@ import ollama
 import json
 import os
 
+
 from fonctions.performances import *
 app = Flask(__name__)
 
