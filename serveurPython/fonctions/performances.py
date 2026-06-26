@@ -103,6 +103,7 @@ def stop_perf_stat(proc):
         return {"error": "perf non disponible"}
     proc.terminate()
     _, stderr = proc.communicate(timeout=5)
+    print(f"[PERF DEBUG] stderr brut :\n{repr(stderr)}")  # repr() pour voir les \n
     return parse_perf_output(stderr)
 
 def parse_perf_output(stderr):

@@ -3,7 +3,6 @@ import uuid
 import ollama
 import json
 import os
-import time
 
 from fonctions.performances import *
 app = Flask(__name__)
