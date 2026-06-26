@@ -8,7 +8,7 @@ from fonctions.performances import *
 app = Flask(__name__)
 
 client = ollama.Client(host='http://ollama:11434')
-
+MODEL="deepseek-r1:14b"
 ############# main #############
 
 
@@ -106,7 +106,7 @@ def compile_code():
         gpu_proc, gpu_lines, gpu_thread = start_gpu_monitor()
 
         reponse = client.chat(
-            model="deepseek-r1:14b",
+            model=MODEL,
             messages=[
                 {"role": "system", "content": prompt_sys},
                 {"role": "user", "content": f"Voici le code C :\n{code}\nVoici le code LLVM IR :\n{llvm0}"}
@@ -202,7 +202,7 @@ def expliquerDiffPass():
 
     try : 
         reponse = client.chat(
-                model="deepseek-r1:14b",
+                model=MODEL,
                 messages=[
                     {"role": "system", "content": prompt},
                     {"role": "user", "content": f"Voici l'ancien code llvm-ir' :\n{llvm1}\n Voici le nouveau code llvm-ir :\n{llvm2}"}
