@@ -1,6 +1,7 @@
 import subprocess
 import threading
 import re
+import time
 
 def start_gpu_monitor():
     proc = subprocess.Popen(
@@ -82,28 +83,30 @@ def parse_dmon_output(lines):
 
 
 def start_perf_stat(pid):
+    print(f"[PERF DEBUG] Attachement au PID {pid}")
     try:
         proc = subprocess.Popen(
-            [
-                "perf", "stat",
+            ["perf", "stat",
                 "-e", "cycles,instructions,cache-misses,task-clock",
                 "-p", str(pid),
-                "--per-thread"
-            ],
+                "--per-thread"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.PIPE,
             text=True
         )
+        print(f"[PERF DEBUG] perf lancé, PID={proc.pid}")
         return proc
     except FileNotFoundError:
         return None
+
 
 def stop_perf_stat(proc):
     if proc is None:
         return {"error": "perf non disponible"}
     proc.terminate()
+    time.sleep(0.5)  # laisse perf écrire sa sortie après SIGTERM
     _, stderr = proc.communicate(timeout=5)
-    print(f"[PERF DEBUG] stderr brut :\n{repr(stderr)}")  # repr() pour voir les \n
+    print(f"[PERF DEBUG] stderr brut :\n{repr(stderr)}")
     return parse_perf_output(stderr)
 
 def parse_perf_output(stderr):
