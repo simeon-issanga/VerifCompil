@@ -104,7 +104,6 @@ def compile_code():
         
         # Démarrage des monitors
         gpu_proc, gpu_lines, gpu_thread = start_gpu_monitor()
-        perf_proc = start_perf_stat(os.getpid())   # PID du process Flask courant
 
         reponse = client.chat(
             model="deepseek-r1:14b",
@@ -121,7 +120,6 @@ def compile_code():
         
         # Arrêt et collecte
         gpu_stats  = stop_gpu_monitor(gpu_proc, gpu_lines, gpu_thread)
-        cpu_stats  = stop_perf_stat(perf_proc)
         # Métriques Ollama natives
         perf_ia = {
             "inference_total_ms":  reponse.get("total_duration", 0)      / 1e6,
@@ -132,8 +130,7 @@ def compile_code():
                 reponse.get("eval_count", 0) /
                 max(reponse.get("eval_duration", 1) / 1e9, 1e-9), 2
             ),
-            "gpu": gpu_stats,
-            "cpu": cpu_stats,
+            "gpu": gpu_stats
         }
         
         
