@@ -45,18 +45,20 @@ Créez un fichier `.env` dans le dossier `config/env/` :
 ```
 mkdir -p config/env
 nano config/env/.env
+nano .env
 ```
 Ajoutez-y votre clé API
 
 ```
-API_KEY=votre_cle_api_ici
+DB_USER=nom user de la bdd
+DB_PASSWORD=ton mot de passe
+DB_NAME=nom de la base de données
 ```
 
 3.  Lancement avec Docker
 ```
-docker compose up --build -d
+docker compose up -d --build 
 ```
-L'application est maintenant accessible sur : http://localhost:8080
 
 ## CI/CD 
 
@@ -70,7 +72,7 @@ Ce projet utilise GitHub Actions pour assurer une qualité de code constante :
 
 * Frontend : React.js, CodeMirror 6 (Éditeurs de code), Vite.
 * Backend : Flask (Python 3.10), Clang/LLVM 15+.
-* IA : _
+* IA : Ollama (3 modeles utilisés pour mesurer les performances)
 * Serveur : Nginx (Reverse Proxy), Docker.
 
 ## Contributeurs 
@@ -78,32 +80,6 @@ Ce projet utilise GitHub Actions pour assurer une qualité de code constante :
 * [Lucas Oustaloup](https://github.com/LucasOtlp)
 * [Siméon Issanga--Peyrot](https://github.com/simeon-issanga)
 
-## Commandes
-
-Pour obtenir le pass de départ de O0
-clang helloWorld.c -O0 -emit-llvm -S -o nonOptiO0.llx
-
-Pour obtenir le pass de départ de -01
-clang helloWorld.c -O1 -disable-llvm-passes -emit-llvm -S -o nonOptiO1.ll
-
-Pour obtenir le pass de départ de -02
-clang helloWorld.c -O2 -disable-llvm-passes -emit-llvm -S -o nonOptiO2.ll
-
-Pour obtenir le pass de départ de -03
-clang helloWorld.c -O3 -disable-llvm-passes -emit-llvm -S -o nonOptiO3.ll
-
-
-Pour obtenir les passes d'opti de O0
-clang  -mllvm -print-after-all helloWorld.c -c -o /dev/null 2> passesO0.txt
-
-Pour obtenir les passes d'opti de O1
-clang -O1 -mllvm -print-after-all helloWorld.c -c -o /dev/null 2> passesO1.txt
-
-Pour obtenir les passes d'opti de O2
-clang -O2 -mllvm -print-after-all helloWorld.c -c -o /dev/null 2> passesO2.txt
-
-Pour obtenir les passes d'opti de O3
-clang -O3 -mllvm -print-after-all helloWorld.c -c -o /dev/null 2> passesO3.txt
 
 
 Pour obtenir la différence entre deux passes
