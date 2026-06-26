@@ -6,6 +6,8 @@ import os
 
 
 from fonctions.performances import *
+from db import insert_prompt
+
 app = Flask(__name__)
 
 client = ollama.Client(host='http://ollama:11434')
@@ -123,16 +125,24 @@ def compile_code():
         gpu_stats  = stop_gpu_monitor(gpu_proc, gpu_lines, gpu_thread)
         # Métriques Ollama natives
         perf_ia = {
-            "inference_total_ms":  reponse.get("total_duration", 0)      / 1e6,
-            "prompt_eval_ms":      reponse.get("prompt_eval_duration", 0) / 1e6,
-            "generation_ms":       reponse.get("eval_duration", 0)        / 1e6,
+            "done": reponse.get("done", 0),
             "tokens_generated":    reponse.get("eval_count", 0),
-            "tokens_per_sec":      round(
-                reponse.get("eval_count", 0) /
-                max(reponse.get("eval_duration", 1) / 1e9, 1e-9), 2
-            ),
+            "tokens_used":    reponse.get("prompt_eval_count", 0),
+            "total_duration_ms":  reponse.get("total_duration", 0)      / 1e6,  
+            "load_duration_ms":  reponse.get("load_duration", 0)      / 1e6, 
+            "prompt_eval_duration_ms":      reponse.get("prompt_eval_duration", 0) / 1e6,
+            "token_generation_duration_ms":       reponse.get("eval_duration", 0)        / 1e6,
             "gpu": gpu_stats
         }
+        
+        
+        insert_prompt(
+            perf_ia=perf_ia,
+            modele_id="" #TODO : ajouter l'ID
+        )
+        
+        
+        
         
         
         content = reponse['message']['content']
