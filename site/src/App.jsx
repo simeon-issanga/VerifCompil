@@ -567,6 +567,7 @@ export default function App() {
         added={t('added')}
         deleted={t('deleted')}
         total={t('total')}
+        title={t('graphTitle')}
       />
 
     </>

@@ -27,7 +27,8 @@ i18n
                     "lines":"lines",
                     "added": "added",
                     "deleted":"deleted",
-                    "total":"total"
+                    "total":"total",
+                    "graphTitle": "evolution of the number of lines"
                 }
             },
             fr: {
@@ -49,7 +50,8 @@ i18n
                     "lines":"lignes",
                     "added": "ajouts",
                     "deleted":"supprimées",
-                    "total":"total"
+                    "total":"total",
+                    "graphTitle":"evolution du nombre de lignes"
                 }
             },
             es: {
@@ -71,7 +73,8 @@ i18n
                     "lines":"lineas",
                     "added": "añadidas",
                     "deleted":"eliminadas",
-                    "total":"total"
+                    "total":"total",
+                    "graphTitle": "evolución del número de líneas"
                 }
             }
         }
