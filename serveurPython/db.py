@@ -6,7 +6,7 @@ def get_connection():
         dbname=os.environ.get("DB_NAME"),
         user=os.environ.get("DB_USER"),
         password=os.environ.get("DB_PASSWORD"),
-        host="db"
+        host="db",
         port=os.environ.get("DB_PORT")
     )
 
