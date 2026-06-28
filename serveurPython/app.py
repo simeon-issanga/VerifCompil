@@ -11,7 +11,7 @@ from db import insert_prompt
 app = Flask(__name__)
 
 client = ollama.Client(host='http://ollama:11434')
-MODEL="qwen2.5-coder:7b"
+MODEL="mistral-small"
 idM=0
 ############# main #############
 
@@ -143,7 +143,7 @@ def compile_code():
             idM = 1
         elif MODEL == "deepseek-r1:14b":
             idM = 2
-        elif MODEL == "deepseek-r1:32b":
+        elif MODEL == "mistral-small":
             idM = 3
         else : 
             idM = 0 # erreur 
