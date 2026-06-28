@@ -10,7 +10,7 @@ def get_connection():
         port=os.environ.get("DB_PORT")
     )
 
-def insert_prompt(perf_ia: dict, modele_id: int):
+def insert_prompt(perf_ia: dict, modele_id: int, status : bool):
 
     requete = """
         INSERT INTO prompt (
@@ -27,9 +27,10 @@ def insert_prompt(perf_ia: dict, modele_id: int):
             avg_power_w,
             peak_power_w,
             energy_joules,
-            modele_id
+            modele_id,
+            status
         ) VALUES (
-            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
         )
     """
 
@@ -49,6 +50,7 @@ def insert_prompt(perf_ia: dict, modele_id: int):
         gpu.get("peak_power_w"),
         gpu.get("energy_joules"),
         modele_id,
+        status
     )
 
     conn = get_connection()

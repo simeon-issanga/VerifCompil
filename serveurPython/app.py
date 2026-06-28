@@ -38,6 +38,8 @@ def compile_code():
         import fonctions.c as fct
         file_path = f"temp_{uid}.c"
 
+
+    perf_ia = {}
     try:
         with open(file_path, "w") as file:
             file.write(code)
@@ -133,7 +135,7 @@ def compile_code():
             "load_duration_ms":  reponse.get("load_duration", 0)      / 1e6, 
             "prompt_eval_duration_ms":      reponse.get("prompt_eval_duration", 0) / 1e6,
             "token_generation_duration_ms":       reponse.get("eval_duration", 0)        / 1e6,
-            "gpu": gpu_stats
+            "gpu": gpu_stats,
         }
         
         
@@ -149,7 +151,8 @@ def compile_code():
 
         insert_prompt(
             perf_ia=perf_ia,
-            modele_id= idM
+            modele_id= idM,
+            status=True
         )
         
         
@@ -199,6 +202,11 @@ def compile_code():
             }
         })
     except Exception as e:
+        insert_prompt(
+            perf_ia=perf_ia,
+            modele_id= idM,
+            status=False
+        )
         return jsonify({"status": "error", "message": str(e)}), 500
 
     finally:
