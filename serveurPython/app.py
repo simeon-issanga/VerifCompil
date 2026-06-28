@@ -12,6 +12,7 @@ app = Flask(__name__)
 
 client = ollama.Client(host='http://ollama:11434')
 MODEL="deepseek-r1:14b"
+idM=""
 ############# main #############
 
 
@@ -136,9 +137,19 @@ def compile_code():
         }
         
         
+        if MODEL == "qwen2.5-coder:7b" :
+            idM = "1"
+        elif MODEL == "deepseek-r1:14b":
+            idM = "2"
+        elif MODEL == "deepseek-r1:32b":
+            idM = "3"
+        else : 
+            idM = "0" # erreur 
+
+
         insert_prompt(
             perf_ia=perf_ia,
-            modele_id="" #TODO : ajouter l'ID
+            modele_id= idM
         )
         
         
