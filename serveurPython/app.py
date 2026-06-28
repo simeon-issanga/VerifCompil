@@ -11,7 +11,7 @@ from db import insert_prompt
 app = Flask(__name__)
 
 client = ollama.Client(host='http://ollama:11434')
-MODEL="deepseek-r1:32b"
+MODEL="qwen2.5-coder:7b"
 idM=""
 ############# main #############
 
