@@ -40,6 +40,7 @@ def compile_code():
 
 
     perf_ia = {}
+    status=True
     try:
         with open(file_path, "w") as file:
             file.write(code)
@@ -147,17 +148,10 @@ def compile_code():
             idM = 3
         else : 
             idM = 0 # erreur 
-
-
-        insert_prompt(
-            perf_ia=perf_ia,
-            modele_id= idM,
-            status=True
-        )
         
         
         
-        
+        status=True
         
         content = reponse['message']['content']
         clean_json = content.replace("```json", "").replace("```", "").strip()
@@ -202,14 +196,15 @@ def compile_code():
             }
         })
     except Exception as e:
-        insert_prompt(
-            perf_ia=perf_ia,
-            modele_id= idM,
-            status=False
-        )
+        status=False
         return jsonify({"status": "error", "message": str(e)}), 500
 
     finally:
+        insert_prompt(
+            perf_ia=perf_ia,
+            modele_id= idM,
+            status=status
+        )
         for f in fichSupp:
             if f and os.path.exists(f): os.remove(f)
 
