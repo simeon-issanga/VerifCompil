@@ -207,7 +207,7 @@ def compile_code():
     try:
         gpu_proc, gpu_lines, gpu_thread = start_gpu_monitor()
 
-        donnees_ia, perfs_brutes = traiterFenetres(client, code, llvm0, MODEL, prompt_sys)
+        donnees_ia, perfs_brutes = traiterFenetres(client, code, llvm0, MODEL)
         
         gpu_stats = stop_gpu_monitor(gpu_proc, gpu_lines, gpu_thread)
 

@@ -125,7 +125,7 @@ def traiterFenetres(client, code_c, llvm_complet, model_name):
         "liste_explication": []
     }
     
-    perf_cumulee = {
+    perf = {
         "tokens_generated": 0,
         "tokens_used": 0,
         "total_duration_ms": 0,
@@ -137,6 +137,33 @@ def traiterFenetres(client, code_c, llvm_complet, model_name):
     }
 
     prompt_sys ="""
+
+        Tu es un expert en infrastructure LLVM.
+
+            RÈGLES DE FORMATAGE JSON :
+            1. Tu dois répondre avec un objet JSON valide.
+            2. Le JSON contient 3 listes de même longueur : "liste_c", "liste_ll", "liste_explication".
+
+        RÈGLES D'ALIGNEMENT :
+            - L'instruction liste_ll[i][j] doit avoir son explication à liste_explication[i][j].
+            - Si une ligne C n'a pas d'équivalent IR (ex: une accolade seule), liste_ll[i] et liste_explication[i] doivent être des tableaux vides [].
+
+            EXEMPLE TYPE :
+            {
+                "analyse": [
+                    {
+                        "ligne_c": "int a = 1;",
+                        "instructions_ll": ["%1 = alloca i32", "store i32 1, i32* %1"],
+                        "explications": ["Alloue 4 octets", "Stocke la valeur 1"]
+                    },
+                    {
+                    "ligne_c": "int a = 2;",
+                        "instructions_ll": ["%1 = alloca i32", "store i32 1, i32* %1"],
+                        "explications": ["Alloue 4 octets", "Stocke la valeur 2"]
+                    }
+                ]
+            }
+
     """
     for i in range(0, len(lignes_llvm), taille_fenetre):
         chunk_llvm = "\n".join(lignes_llvm[i:i + taille_fenetre])
@@ -154,14 +181,14 @@ def traiterFenetres(client, code_c, llvm_complet, model_name):
         )
         
         # 1. Accumuler les perfs
-        perf_cumulee["total_duration_ms"] += reponse.get("total_duration", 0) / 1e6
-        perf_cumulee["load_duration_ms"] += reponse.get("load_duration", 0) / 1e6
-        perf_cumulee["prompt_eval_duration_ms"] += reponse.get("prompt_eval_duration", 0) / 1e6
-        perf_cumulee["token_generation_duration_ms"] += reponse.get("eval_duration", 0) / 1e6
-        perf_cumulee["tokens_generated"] += reponse.get("eval_count", 0)
-        perf_cumulee["tokens_used"] += reponse.get("prompt_eval_count", 0)
-        perf_cumulee["eval_count"] += reponse.get("eval_count", 0)
-        perf_cumulee["prompt_eval_count"] += reponse.get("prompt_eval_count", 0)
+        perf["total_duration_ms"] += reponse.get("total_duration", 0) / 1e6
+        perf["load_duration_ms"] += reponse.get("load_duration", 0) / 1e6
+        perf["prompt_eval_duration_ms"] += reponse.get("prompt_eval_duration", 0) / 1e6
+        perf["token_generation_duration_ms"] += reponse.get("eval_duration", 0) / 1e6
+        perf["tokens_generated"] += reponse.get("eval_count", 0)
+        perf["tokens_used"] += reponse.get("prompt_eval_count", 0)
+        perf["eval_count"] += reponse.get("eval_count", 0)
+        perf["prompt_eval_count"] += reponse.get("prompt_eval_count", 0)
         
         try:
             content = json.loads(reponse['message']['content'])
@@ -174,4 +201,4 @@ def traiterFenetres(client, code_c, llvm_complet, model_name):
             resultat_global["liste_ll"].extend([["Erreur parsing"]] * nb_lignes)
             resultat_global["liste_explication"].extend([[""]] * nb_lignes)
 
-    return resultat_global, perf_cumulee
+    return resultat_global, perf
