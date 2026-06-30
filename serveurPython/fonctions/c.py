@@ -140,29 +140,13 @@ def traiterFenetres(client, code_c, llvm_complet, model_name):
 
         Tu es un expert en infrastructure LLVM.
 
-            RÈGLES DE FORMATAGE JSON :
-            1. Tu dois répondre avec un objet JSON valide.
-            2. Le JSON contient 3 listes de même longueur : "liste_c", "liste_ll", "liste_explication".
-
-        RÈGLES D'ALIGNEMENT :
-            - L'instruction liste_ll[i][j] doit avoir son explication à liste_explication[i][j].
-            - Si une ligne C n'a pas d'équivalent IR (ex: une accolade seule), liste_ll[i] et liste_explication[i] doivent être des tableaux vides [].
-
-            EXEMPLE TYPE :
-            {
-                "analyse": [
-                    {
-                        "ligne_c": "int a = 1;",
-                        "instructions_ll": ["%1 = alloca i32", "store i32 1, i32* %1"],
-                        "explications": ["Alloue 4 octets", "Stocke la valeur 1"]
-                    },
-                    {
-                    "ligne_c": "int a = 2;",
-                        "instructions_ll": ["%1 = alloca i32", "store i32 1, i32* %1"],
-                        "explications": ["Alloue 4 octets", "Stocke la valeur 2"]
-                    }
-                ]
-            }
+        Tu dois répondre avec un objet JSON valide contenant EXACTEMENT ces 3 clés :
+        1. "liste_c": [Chaîne] (La ligne C)
+        2. "liste_ll": [[Chaîne]] (Les instructions LLVM correspondantes)
+        3. "liste_explication": [[Chaîne]] (Les explications correspondantes)
+        
+        Chaque entrée des listes doit correspondre à l'index des autres.
+    
 
     """
     for i in range(0, len(lignes_llvm), taille_fenetre):
@@ -192,9 +176,17 @@ def traiterFenetres(client, code_c, llvm_complet, model_name):
         
         try:
             content = json.loads(reponse['message']['content'])
-            resultat_global["liste_c"].extend(content.get("liste_c", []))
-            resultat_global["liste_ll"].extend(content.get("liste_ll", []))
-            resultat_global["liste_explication"].extend(content.get("liste_explication", []))
+            
+            if "analyse" in content:
+                for item in content["analyse"]:
+                    resultat_global["liste_c"].append(item.get("ligne_c", ""))
+                    resultat_global["liste_ll"].append(item.get("instructions_ll", []))
+                    resultat_global["liste_explication"].append(item.get("explications", []))
+            else:
+                # Format standard attendu
+                resultat_global["liste_c"].extend(content.get("liste_c", []))
+                resultat_global["liste_ll"].extend(content.get("liste_ll", []))
+                resultat_global["liste_explication"].extend(content.get("liste_explication", []))
         except Exception as e:
             nb_lignes = len(chunk_llvm.splitlines())
             resultat_global["liste_c"].extend([""] * nb_lignes)
