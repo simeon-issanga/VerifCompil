@@ -21,6 +21,9 @@ idM=0
 @app.route('/api/compile', methods=['POST'], strict_slashes=False)
 @app.route('/compile', methods=['POST'], strict_slashes=False)
 def compile_code():
+    listeC = []
+    listeLLVM = []
+    listeE = []
     uid = str(uuid.uuid4())
 
     fichSupp = []
@@ -66,10 +69,12 @@ def compile_code():
         llvm3, path3 = fct.genererLLVM(file_path, uid, 3)
         passes3, diffs3,perf3 = fct.genererPasses(file_path, uid, 3)
         fichSupp.append(path3)
-
-
+    except Exception as e :
+        print("pb avec la transi llvm")
+###### V0
+        """
         #  Requête à l'IA
-        prompt_sys = """
+        prompt_sys = 
             Tu es un expert en infrastructure LLVM.
 
             RÈGLES DE FORMATAGE JSON :
@@ -87,7 +92,7 @@ def compile_code():
 
             EXEMPLE TYPE :
             {
-                "liste_c": ["", "int main() {",""],
+                "liste_c": ["int main()],
                 "liste_ll": [
                     ["target triple = \\"x86_64\\"", "!0 = !{i32 1, !\\"wchar_size\\", i32 4}"],
                     ["define i32 @main() {"],
@@ -109,11 +114,11 @@ def compile_code():
                 - TRÈS IMPORTANT : Tous les guillemets doubles à l'intérieur des instructions LLVM doivent être échappés avec un triple backslash pour le JSON (ex: \\\" ).
                 - N'inclus jamais de texte ou d'explications en dehors de l'objet JSON.
 
-        """
+        
         
         # Démarrage des monitors
         gpu_proc, gpu_lines, gpu_thread = start_gpu_monitor()
-
+        
         reponse = client.chat(
             model=MODEL,
             messages=[
@@ -125,8 +130,7 @@ def compile_code():
                 "num_ctx": 11000  
             }
         )
-        
-        
+
         # Arrêt et collecte
         gpu_stats  = stop_gpu_monitor(gpu_proc, gpu_lines, gpu_thread)
         # Métriques Ollama natives
@@ -197,6 +201,54 @@ def compile_code():
                 }
             }
         })
+    """
+    ####### V1#######
+
+    try:
+        gpu_proc, gpu_lines, gpu_thread = start_gpu_monitor()
+
+        donnees_ia, perfs_brutes = traiterFenetres(client, code, llvm0, MODEL, prompt_sys)
+        
+        gpu_stats = stop_gpu_monitor(gpu_proc, gpu_lines, gpu_thread)
+
+        # Construction de l'objet de performance final
+        perf_ia = {
+            "done": True,
+            "tokens_generated": perfs_brutes["tokens_generated"],
+            "tokens_used": perfs_brutes["tokens_used"],
+            "total_duration_ms": perfs_brutes["total_duration_ms"],
+            "load_duration_ms": perfs_brutes["load_duration_ms"],
+            "prompt_eval_duration_ms": perfs_brutes["prompt_eval_duration_ms"],
+            "token_generation_duration_ms": perfs_brutes["token_generation_duration_ms"],
+            "gpu": gpu_stats, 
+        }
+
+        if MODEL == "mistral-small":
+            idM = 3
+        elif MODEL == "deepseek-r1:14b":
+            idM = 2
+        else :
+            idM = 1
+        
+        status = True
+        
+        return jsonify({
+            "status": "success", 
+            "perf_ia": perf_ia,
+            "liste_c": donnees_ia.get("liste_c", []),
+            "optimisations" :{
+                "00": {
+                    "liste_ll": donnees_ia.get("liste_ll", []),
+                    "liste_explication": donnees_ia.get("liste_explication", []),
+                    "liste_passes": passes0,
+                    "liste_diffs": diffs0,
+                    "perf": perf0
+                },
+                "01" : { "liste_ll": [[l] for l in llvm1.split('\n')], "liste_explication": [""], "liste_passes": passes1, "liste_diffs": diffs1, "perf": perf1 },
+                "02" : { "liste_ll": [[l] for l in llvm2.split('\n')], "liste_explication": [""], "liste_passes": passes2, "liste_diffs": diffs2, "perf": perf2 },
+                "03" : { "liste_ll": [[l] for l in llvm3.split('\n')], "liste_explication": [""], "liste_passes": passes3, "liste_diffs": diffs3, "perf": perf3 }
+            }
+        })
     except Exception as e:
         status=False
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -237,7 +289,8 @@ def expliquerDiffPass():
                 ],
                 options={
                     "temperature": 0.2,
-                    "num_ctx": 12000  
+                    "num_ctx": 12000,
+                    "num_predict": 4096  
                 }
         )
         
