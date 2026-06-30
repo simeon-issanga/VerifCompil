@@ -230,13 +230,14 @@ def expliquerDiffPass():
     try : 
         reponse = client.chat(
                 model=MODEL,
+                format='json',
                 messages=[
                     {"role": "system", "content": prompt},
                     {"role": "user", "content": f"Voici l'ancien code llvm-ir' :\n{llvm1}\n Voici le nouveau code llvm-ir :\n{llvm2}"}
                 ],
                 options={
                     "temperature": 0.2,
-                    "num_ctx": 9000  
+                    "num_ctx": 12000  
                 }
         )
         
