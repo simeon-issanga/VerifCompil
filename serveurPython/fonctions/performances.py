@@ -100,7 +100,7 @@ def parse_dmon_output(lines):
                 sample["power_w"] = float(row["pwr"])
 
             # N'ajoute le sample que s'il contient au moins une métrique valide
-            if sample:
+            if len(sample) > 1:  # > 1 car timestamp est toujours présent
                 samples.append(sample)
 
         except ValueError:
@@ -114,6 +114,7 @@ def parse_dmon_output(lines):
     power_values = [s["power_w"]      for s in samples if "power_w"      in s]
     gpu_values   = [s["gpu_util_pct"] for s in samples if "gpu_util_pct" in s]
     mem_values   = [s["mem_util_pct"] for s in samples if "mem_util_pct" in s]
+    timestamps   = [s["timestamp"]    for s in samples if "power_w"      in s]
 
     # duration_s : durée totale de l'inférence en secondes. Avec -d 1, chaque sample représente 1 seconde
     duration_s = len(samples)
@@ -127,12 +128,25 @@ def parse_dmon_output(lines):
     if mem_values:
         result["avg_mem_util_pct"] = round(sum(mem_values) / len(mem_values), 1)
 
-    if power_values:
-        avg_power = sum(power_values) / len(power_values)
-        result["avg_power_w"]   = round(avg_power, 1)
-        result["peak_power_w"]  = round(max(power_values), 1)
+    if power_values and len(power_values) >= 2:
+        t = np.array(timestamps)
+        p = np.array(power_values)
+        
+        # Intégration trapézoïdale
+        energy_joules = float(np.trapezoid(p, t))
+        
+        # Durée réelle entre le premier et le dernier sample
+        duration_s = t[-1] - t[0]
+
+        result["avg_power_w"]   = round(float(np.mean(p)), 1)
+        result["peak_power_w"]  = round(float(np.max(p)), 1)
+        result["energy_joules"] = round(energy_joules, 2)
+        result["duration_s"]    = round(duration_s, 2)
+
+    elif power_values: #si il n'y a qu'un sample
+        result["avg_power_w"]   = round(power_values[0], 1)
+        result["peak_power_w"]  = round(power_values[0], 1)
         # Énergie en Joules = puissance moyenne (W) × durée (s)
-        # C'est la métrique la plus représentative du coût énergétique réel de l'inférence
-        result["energy_joules"] = round(avg_power * duration_s, 2)
+        result["energy_joules"] = 0.0
 
     return result
