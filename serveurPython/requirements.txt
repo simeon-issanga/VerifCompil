@@ -5,3 +5,4 @@ gunicorn
 requests
 ollama
 psycopg2-binary
+numpy
