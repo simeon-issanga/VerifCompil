@@ -85,7 +85,7 @@ def parse_dmon_output(lines):
         row = dict(zip(headers, vals))
 
         try:
-            sample = {"timestamp": timestamp}  # TODO : finir (corriger import numpy puis utiliser le timestamp pour le calcul integral)
+            sample = {"timestamp": np.timestamp}  # TODO : finir (corriger import numpy puis utiliser le timestamp pour le calcul integral)
 
             # sm = Streaming Multiprocessor utilization. rprésente le pourcentage de temps où le GPU exécutait des kernels de calcul
             if row.get("sm", "-") != "-":
