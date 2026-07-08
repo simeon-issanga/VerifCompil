@@ -125,11 +125,15 @@ def compile_code():
         return jsonify({"status": "error", "message": str(e)}), 500
 
     finally:
-        insert_prompt(
-            perf_ia=perf_ia,
-            modele_id= idM,
-            status=status
-        )
+        try : 
+            insert_prompt(
+                perf_ia=perf_ia,
+                modele_id= idM,
+                status=status
+            )
+        except Exception as e:
+            print(f"Erreur lors de l'insertion dans la base de données : {str(e)}")
+        
         for f in fichSupp:
             if f and os.path.exists(f): os.remove(f)
 
