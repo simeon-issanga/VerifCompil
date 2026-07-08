@@ -57,7 +57,7 @@ def parse_dmon_output(lines):
     samples = []
     headers = None  # None = header pas encore rencontré
 
-    for line in lines:
+    for timestamp, line in lines:
         stripped = line.strip()
         if not stripped:
             continue
@@ -85,7 +85,7 @@ def parse_dmon_output(lines):
         row = dict(zip(headers, vals))
 
         try:
-            sample = {"timestamp": np.timestamp}  # TODO : finir (corriger import numpy puis utiliser le timestamp pour le calcul integral)
+            sample = {"timestamp": timestamp}
 
             # sm = Streaming Multiprocessor utilization. rprésente le pourcentage de temps où le GPU exécutait des kernels de calcul
             if row.get("sm", "-") != "-":
@@ -115,9 +115,6 @@ def parse_dmon_output(lines):
     gpu_values   = [s["gpu_util_pct"] for s in samples if "gpu_util_pct" in s]
     mem_values   = [s["mem_util_pct"] for s in samples if "mem_util_pct" in s]
     timestamps   = [s["timestamp"]    for s in samples if "power_w"      in s]
-
-    # duration_s : durée totale de l'inférence en secondes. Avec -d 1, chaque sample représente 1 seconde
-    duration_s = len(samples)
 
     result = {"samples_count": len(samples)}
 
