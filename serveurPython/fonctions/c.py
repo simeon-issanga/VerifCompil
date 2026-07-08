@@ -136,21 +136,68 @@ def traiterFenetres(client, code_c, llvm_complet, model_name):
         "prompt_eval_count": 0
     }
 
-    prompt_sys ="""
+    if model_name == "mistral-small":
 
-        Tu es un expert en infrastructure LLVM.
+        prompt_sys ="""
 
-        Tu dois répondre avec un objet JSON valide contenant EXACTEMENT ces 3 clés :
-        1. "liste_c": [Chaîne] (La ligne C)
-        2. "liste_ll": [[Chaîne]] (Les instructions LLVM correspondantes)
-        3. "liste_explication": [[Chaîne]] (Les explications correspondantes)
+            Tu es un expert en infrastructure LLVM.
 
-        IMPOORTANT : NE FAIS PAS de commentaires avant ou après le JSON.
+            Tu dois répondre avec un objet JSON valide contenant EXACTEMENT ces 3 clés :
+            1. "liste_c": [Chaîne] (La ligne C)
+            2. "liste_ll": [[Chaîne]] (Les instructions LLVM correspondantes)
+            3. "liste_explication": [[Chaîne]] (Les explications correspondantes)
+
+            IMPOORTANT : NE FAIS PAS de commentaires avant ou après le JSON.
+            
+            Chaque entrée des listes doit correspondre à l'index des autres.
+        """
+    elif model_name == "deepseek-r1:14b":
+        prompt_sys = """Tu es un expert en infrastructure LLVM. 
+        Ton rôle est de mapper précisément du code C vers ses instructions LLVM IR.
+
+        CONSIGNE STRICTE :
+        1. Tu dois répondre EXCLUSIVEMENT avec un objet JSON valide.
+        2. Ne mets aucun texte, avertissement ou commentaire avant ou après le bloc JSON.
+        3. Respecte scrupuleusement cette structure :
+
+        {
+            "liste_c": ["ligne de code C"],
+            "liste_ll": [["instruction LLVM 1", "instruction LLVM 2"]],
+            "liste_explication": [["explication 1", "explication 2"]]
+        }
+
+        DÉTAILS DES CLÉS :
+        - "liste_c" : Une liste de chaînes (chaque élément est une ligne du code C original).
+        - "liste_ll" : Une liste de listes (chaque sous-liste contient les instructions LLVM IR correspondant à la ligne C).
+        - "liste_explication" : Une liste de listes (chaque sous-liste contient les explications techniques pour chaque instruction LLVM).
+
+        IMPORTANT : Les index des trois listes doivent être parfaitement synchronisés (la ligne C à l'index 0 doit correspondre aux instructions à l'index 0 de liste_ll).
+        """
+
+    else : 
+        prompt_sys = """You are a specialized LLVM IR expert. 
+        Your task is to map C code lines to their corresponding LLVM IR instructions.
+
+        ### RULES:
+        1. Return ONLY a valid JSON object.
+        2. No conversational text, no markdown code blocks (no ```json).
+        3. Ensure a 1:1 mapping between the indices of the three lists.
+
+        ### JSON STRUCTURE:
+        {
+            "liste_c": ["C line"],
+            "liste_ll": [["llvm_inst_1", "llvm_inst_2"]],
+            "liste_explication": [["explanation_1", "explanation_2"]]
+        }
+
+        ### CONSTRAINTS:
+        - "liste_c": Array of strings (the C source lines).
+        - "liste_ll": Array of arrays (each sub-array contains the LLVM instructions for that C line).
+        - "liste_explication": Array of arrays (each sub-array contains technical explanations).
         
-        Chaque entrée des listes doit correspondre à l'index des autres.
-    
+        If a C line has no corresponding LLVM instructions in the provided chunk, return an empty list [] for that index in "liste_ll".
+        """
 
-    """
     for i in range(0, len(lignes_llvm), taille_fenetre):
         chunk_llvm = "\n".join(lignes_llvm[i:i + taille_fenetre])
         
