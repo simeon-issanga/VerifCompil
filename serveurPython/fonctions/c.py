@@ -144,6 +144,8 @@ def traiterFenetres(client, code_c, llvm_complet, model_name):
         1. "liste_c": [Chaîne] (La ligne C)
         2. "liste_ll": [[Chaîne]] (Les instructions LLVM correspondantes)
         3. "liste_explication": [[Chaîne]] (Les explications correspondantes)
+
+        IMPOORTANT : NE FAIS PAS de commentaires avant ou après le JSON.
         
         Chaque entrée des listes doit correspondre à l'index des autres.
     
