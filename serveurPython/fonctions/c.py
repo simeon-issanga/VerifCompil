@@ -223,9 +223,28 @@ def traiterFenetres(client, code_c, llvm_complet, model_name):
         perf["eval_count"] += reponse.get("eval_count", 0)
         perf["prompt_eval_count"] += reponse.get("prompt_eval_count", 0)
         
+        content = json.loads(reponse['message']['content'])
+
         try:
-            content = json.loads(reponse['message']['content'])
             
+            # 1. Supprimer les balises de réflexion de DeepSeek (si présentes)
+            if "</think>" in contenu_ia:
+                contenu_ia = contenu_ia.split("</think>")[-1].strip()
+
+            # 2. Supprimer les délimiteurs Markdown ```json ... ```
+            if contenu_ia.startswith("```"):
+                # Enlever la première ligne (ex: ```json)
+                lignes = contenu_ia.splitlines()
+                if lignes[0].startswith("```"):
+                    lignes = lignes[1:]
+                # Enlever la dernière ligne (ex: ```)
+                if lignes and lignes[-1].startswith("```"):
+                    lignes = lignes[:-1]
+                contenu_ia = "\n".join(lignes).strip()
+
+            # Maintenant on peut parser
+            content = json.loads(contenu_ia)
+
             if "analyse" in content:
                 for item in content["analyse"]:
                     resultat_global["liste_c"].append(item.get("ligne_c", ""))
