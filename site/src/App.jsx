@@ -31,7 +31,6 @@ export default function App() {
     i18n.changeLanguage(nextLang);
   };
 
-  // useRef : persiste entre les rendus et ne déclenche aucun re-rendu, banger non ?!
   const inputRef = useRef(null)   // view de l'éditeur source
   const outputRef = useRef(null)   // view de l'éditeur output
   const previousPass = useRef(null); // view de l'éditeur previousPass
@@ -39,12 +38,11 @@ export default function App() {
 
   const niveau_optimisation = useRef(0);
 
-
   const reponseIA = useRef(null); //Ensemble des données affichées
 
   const [explications, setExplications] = useState('');
   const [explicationsPass, setExplicationsPass] = useState('');
-  const [currentPass, setCurrentPass] = useState(0);
+  const [currentPass, setCurrentPass] = useState(0);  //Les pass affichés sont currentPass et currentPass+1
   const [message, setMessage] = useState('');
   const [nbPasses, setNbPasses] = useState(0);
   const [langageCode, setLangageCode] = useState('c');
@@ -53,10 +51,7 @@ export default function App() {
   const K = useRef(0)                  // nombre total de passes avec changement  
   const [afficherFiltre, setAfficherFiltre] = useState(false) // toggle entre les deux modes (montrer tous les passes / montrer les passes avec changement)
 
-
   useEffect(() => {//TEST de données pour reponseIA
-
-    //ajout du ll comme premier pass à chaque niveau d'opti
     reponseIA.current = {
       liste_c: donnees["liste_c"],
       liste_explicationO0: donnees["optimisations"]["00"]["liste_explication"],
@@ -80,7 +75,6 @@ export default function App() {
       liste_diffsO3: donnees["optimisations"]["03"]["liste_diffs"],
       perfO3: donnees["optimisations"]["03"]["perf"],
     };
-
     majReponseIA(reponseIA.current?.liste_llO0 ?? [], reponseIA.current?.liste_explicationO0 ?? [], reponseIA.current?.liste_diffsO0 ?? [])
   }, []);
 
@@ -136,13 +130,11 @@ export default function App() {
     resetHighlights(); //réinitialise le highlight des lignes
     let listePass = reponseIA.current?.["liste_passesO" + niveau_optimisation.current] ?? [];
 
-
     // indices des diffs avec changement dans listeDiff
     indicesFiltres.current = listeDiffs
       .map((diff, i) => diffAvecChangements(diff) ? i : null)
       .filter(i => i !== null)
     K.current = indicesFiltres.current.length
-
 
     if (isResponseObject) {
       setMessage('');
@@ -215,7 +207,6 @@ export default function App() {
         )
       });
 
-      //TODO : jsp si nécéssaire
       previousPass.current.dispatch({
         changes: {
           from: 0,
@@ -285,7 +276,7 @@ export default function App() {
         }
         console.log(donnees);
       } catch (erreurParse) {
-        // 4. Si la transformation plante (ce n'est pas du JSON), on affiche l'erreur brute
+        // Si la transformation plante (ce n'est pas du JSON), on affiche l'erreur brute
         reponseIA.current = "Erreur inattendue (Nginx ou plantage Flask) :\n\n" + texteBrut;
       }
     } catch (error) {
@@ -353,8 +344,6 @@ export default function App() {
     previousPassHighlighterCompartment.of([]),
   ]
 
-
-
   //Référence pour simuler le clic sur le input masqué
   const fileInputRef = useRef(null);
 
@@ -394,7 +383,7 @@ export default function App() {
     )
   }
 
-  //Compte le nombre de lignes ajoutées supprimées du diff donné
+  //Compte le nombre de lignes ajoutées/supprimées du diff donné
   function compterChangements(listeDiffs, indexDiff) {
     const diff = listeDiffs?.[indexDiff] ?? ''
     if (!diff || diff.trim() === '') return { ajouts: 0, suppressions: 0 }
@@ -409,8 +398,6 @@ export default function App() {
   }
 
 
-
-
   const listePass = reponseIA.current?.["liste_passesO" + niveau_optimisation.current] ?? []
   const titrePasse = afficherFiltre
     ? `(${K.current} ${t("modification")}) pass ${currentPass} → ${currentPass + 1} : ${(listePass[currentPass + 1] ?? '').match(/^\s*\*\*\* IR Dump After .* \*\*\*:?$/m)?.[0] ?? ''
@@ -418,10 +405,6 @@ export default function App() {
     : `pass ${currentPass + 1} / ${nbPasses} : ${(listePass[currentPass + 1] ?? '').match(/^\s*\*\*\* IR Dump After .* \*\*\*:?$/m)?.[0] ?? ''
     }`
   const { ajouts, suppressions } = compterChangements(reponseIA.current?.["liste_diffsO" + niveau_optimisation.current] ?? [], currentPass)
-
-
-
-
 
   const handleExplainDiffPass = async () => {
     setMessage('explication en cours...');
@@ -452,7 +435,6 @@ export default function App() {
     }
     setMessage('');
   }
-
 
   return (
     <>
