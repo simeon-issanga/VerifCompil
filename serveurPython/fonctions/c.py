@@ -237,9 +237,14 @@ def traiterFenetres(client, code_c, llvm_complet, model_name):
                 resultat_global["liste_ll"].extend(content.get("liste_ll", []))
                 resultat_global["liste_explication"].extend(content.get("liste_explication", []))
         except Exception as e:
+            
             nb_lignes = len(chunk_llvm.splitlines())
-            resultat_global["liste_c"].extend([""] * nb_lignes)
-            resultat_global["liste_ll"].extend([["Erreur parsing"]] * nb_lignes)
+            # On récupère les 100 premiers caractères de la réponse pour comprendre
+            raw_text = reponse['message']['content'][:100].replace('\n', ' ')
+            
+            resultat_global["liste_c"].extend(["Erreur"] * nb_lignes)
+            # On affiche l'erreur Python + un aperçu de ce que l'IA a dit
+            resultat_global["liste_ll"].extend([[f"Erreur: {str(e)} | IA a dit: {raw_text}..."]] * nb_lignes)
             resultat_global["liste_explication"].extend([[""]] * nb_lignes)
 
     return resultat_global, perf
