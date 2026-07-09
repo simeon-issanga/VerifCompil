@@ -223,7 +223,7 @@ def traiterFenetres(client, code_c, llvm_complet, model_name):
         perf["eval_count"] += reponse.get("eval_count", 0)
         perf["prompt_eval_count"] += reponse.get("prompt_eval_count", 0)
         
-        content = json.loads(reponse['message']['content'])
+        contenu_ia = json.loads(reponse['message']['content'])
 
         try:
             
