@@ -205,7 +205,7 @@ def traiterFenetres(client, code_c, llvm_complet, model_name):
         
         reponse = client.chat(
             model=model_name,
-            format='json', 
+            #format='json', 
             messages=[
                 {"role": "system", "content": prompt_sys},
                 {"role": "user", "content": prompt_user}
