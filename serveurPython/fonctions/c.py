@@ -3,8 +3,8 @@ import os
 from time import perf_counter
 import subprocess
 from pathlib import Path
+#TODO : à revoir
 import json
-import re
 # à rectifier pas forcément nécessaire !
 
 
@@ -223,49 +223,23 @@ def traiterFenetres(client, code_c, llvm_complet, model_name):
         perf["eval_count"] += reponse.get("eval_count", 0)
         perf["prompt_eval_count"] += reponse.get("prompt_eval_count", 0)
         
-        
-        contenu_brut = reponse['message']['content']
-        
         try:
-            # NETTOYAGE ICI
-            json_propre = extraire_json_pur(contenu_brut)
-            content = json.loads(json_propre)
+            content = json.loads(reponse['message']['content'])
             
-            # Récupération des données
-            c_lines = content.get("liste_c", [])
-            ll_inst = content.get("liste_ll", [])
-            expl = content.get("liste_explication", [])
-
-            # Vérification de la cohérence des tailles
-            if len(c_lines) > 0:
-                resultat_global["liste_c"].extend(c_lines)
-                resultat_global["liste_ll"].extend(ll_inst)
-                resultat_global["liste_explication"].extend(expl)
+            if "analyse" in content:
+                for item in content["analyse"]:
+                    resultat_global["liste_c"].append(item.get("ligne_c", ""))
+                    resultat_global["liste_ll"].append(item.get("instructions_ll", []))
+                    resultat_global["liste_explication"].append(item.get("explications", []))
             else:
-                # Si le JSON est vide ou mal formé
-                raise ValueError("Listes JSON vides")
-
+                # Format standard attendu
+                resultat_global["liste_c"].extend(content.get("liste_c", []))
+                resultat_global["liste_ll"].extend(content.get("liste_ll", []))
+                resultat_global["liste_explication"].extend(content.get("liste_explication", []))
         except Exception as e:
-            print(f"ERREUR PARSING sur chunk {i}: {e}")
-            print(f"CONTENU BRUT IA: {contenu_brut[:200]}...") # Pour debug
-            
-            # En cas d'erreur, on remplit avec du vide pour ne pas décaler
-            nb_lignes_fallback = 1 
-            resultat_global["liste_c"].append("Erreur d'analyse")
-            resultat_global["liste_ll"].append(["Vérifiez le format de sortie de l'IA"])
-            resultat_global["liste_explication"].append([str(e)])
+            nb_lignes = len(chunk_llvm.splitlines())
+            resultat_global["liste_c"].extend([""] * nb_lignes)
+            resultat_global["liste_ll"].extend([["Erreur parsing"]] * nb_lignes)
+            resultat_global["liste_explication"].extend([[""]] * nb_lignes)
 
     return resultat_global, perf
-
-def extraire_json_pur(texte):
-    texte_nettoye = re.sub(r'<think>.*?</think>', '', texte, flags=re.DOTALL)
-    
-    match_code = re.search(r'```json\s*(.*?)\s*```', texte_nettoye, re.DOTALL)
-    if match_code:
-        return match_code.group(1).strip()
-    
-    match_json = re.search(r'(\{.*\})', texte_nettoye, re.DOTALL)
-    if match_json:
-        return match_json.group(1).strip()
-    
-    return texte_nettoye.strip()
