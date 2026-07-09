@@ -119,151 +119,78 @@ def traiterFenetres(client, code_c, llvm_complet, model_name):
     lignes_llvm = llvm_complet.split('\n')
     taille_fenetre = 30  
     
-    resultat_global = {
-        "liste_c": [],
-        "liste_ll": [],
-        "liste_explication": []
-    }
+    resultat_global = {"liste_c": [], "liste_ll": [], "liste_explication": []}
+    perf = {"tokens_generated": 0, "tokens_used": 0, "total_duration_ms": 0, "load_duration_ms": 0, 
+            "prompt_eval_duration_ms": 0, "token_generation_duration_ms": 0, "eval_count": 0, "prompt_eval_count": 0}
+
+    # Prompt unique et robuste pour tous les modèles
+    prompt_sys = """Tu es un expert en infrastructure LLVM.
+    Tu dois mapper du code C vers ses instructions LLVM IR.
     
-    perf = {
-        "tokens_generated": 0,
-        "tokens_used": 0,
-        "total_duration_ms": 0,
-        "load_duration_ms": 0,
-        "prompt_eval_duration_ms": 0,
-        "token_generation_duration_ms": 0,
-        "eval_count": 0,
-        "prompt_eval_count": 0
-    }
-
-    if model_name == "mistral-small":
-
-        prompt_sys ="""
-
-            Tu es un expert en infrastructure LLVM.
-
-            Tu dois répondre avec un objet JSON valide contenant EXACTEMENT ces 3 clés :
-            1. "liste_c": [Chaîne] (La ligne C)
-            2. "liste_ll": [[Chaîne]] (Les instructions LLVM correspondantes)
-            3. "liste_explication": [[Chaîne]] (Les explications correspondantes)
-
-            IMPOORTANT : NE FAIS PAS de commentaires avant ou après le JSON.
-            
-            Chaque entrée des listes doit correspondre à l'index des autres.
-        """
-    elif model_name == "deepseek-r1:14b":
-        prompt_sys = """Tu es un expert en infrastructure LLVM. 
-        Ton rôle est de mapper précisément du code C vers ses instructions LLVM IR.
-
-        CONSIGNE STRICTE :
-        1. Tu dois répondre EXCLUSIVEMENT avec un objet JSON valide.
-        2. Ne mets aucun texte, avertissement ou commentaire avant ou après le bloc JSON.
-        3. Respecte scrupuleusement cette structure :
-
-        {
-            "liste_c": ["ligne de code C"],
-            "liste_ll": [["instruction LLVM 1", "instruction LLVM 2"]],
-            "liste_explication": [["explication 1", "explication 2"]]
-        }
-
-        DÉTAILS DES CLÉS :
-        - "liste_c" : Une liste de chaînes (chaque élément est une ligne du code C original).
-        - "liste_ll" : Une liste de listes (chaque sous-liste contient les instructions LLVM IR correspondant à la ligne C).
-        - "liste_explication" : Une liste de listes (chaque sous-liste contient les explications techniques pour chaque instruction LLVM).
-
-        IMPORTANT : Les index des trois listes doivent être parfaitement synchronisés (la ligne C à l'index 0 doit correspondre aux instructions à l'index 0 de liste_ll).
-        """
-
-    else : 
-        prompt_sys = """You are a specialized LLVM IR expert. 
-        Your task is to map C code lines to their corresponding LLVM IR instructions.
-
-        ### RULES:
-        1. Return ONLY a valid JSON object.
-        2. No conversational text, no markdown code blocks (no ```json).
-        3. Ensure a 1:1 mapping between the indices of the three lists.
-
-        ### JSON STRUCTURE:
-        {
-            "liste_c": ["C line"],
-            "liste_ll": [["llvm_inst_1", "llvm_inst_2"]],
-            "liste_explication": [["explanation_1", "explanation_2"]]
-        }
-
-        ### CONSTRAINTS:
-        - "liste_c": Array of strings (the C source lines).
-        - "liste_ll": Array of arrays (each sub-array contains the LLVM instructions for that C line).
-        - "liste_explication": Array of arrays (each sub-array contains technical explanations).
-        
-        If a C line has no corresponding LLVM instructions in the provided chunk, return an empty list [] for that index in "liste_ll".
-        """
+    RÈGLES :
+    1. Réponds UNIQUEMENT avec un objet JSON valide.
+    2. Ne mets aucun texte avant ou après le JSON.
+    3. Structure attendue :
+    {
+        "liste_c": ["ligne 1", "ligne 2"],
+        "liste_ll": [["instruction A", "instruction B"], ["instruction C"]],
+        "liste_explication": [["raison A", "raison B"], ["raison C"]]
+    }"""
 
     for i in range(0, len(lignes_llvm), taille_fenetre):
         chunk_llvm = "\n".join(lignes_llvm[i:i + taille_fenetre])
-        
-        prompt_user = f"Voici le code C complet pour contexte :\n{code_c}\n\nAnalyse UNIQUEMENT ce segment LLVM (lignes {i} à {i+taille_fenetre}) :\n{chunk_llvm}"
+        prompt_user = f"Code C source pour contexte :\n{code_c}\n\nAnalyse UNIQUEMENT ce segment LLVM (lignes {i} à {i+taille_fenetre}) :\n{chunk_llvm}"
         
         reponse = client.chat(
             model=model_name,
-            format='json', 
+            # Supprimer format='json' ici pour laisser DeepSeek réfléchir (R1)
             messages=[
                 {"role": "system", "content": prompt_sys},
                 {"role": "user", "content": prompt_user}
             ],
-            options={"temperature": 0.1, "num_ctx": 4096}
+            options={"temperature": 0.1, "num_ctx": 8192} # num_ctx augmenté pour DeepSeek
         )
         
-        # 1. Accumuler les perfs
+        # Accumulation des perfs (inchangé)
         perf["total_duration_ms"] += reponse.get("total_duration", 0) / 1e6
-        perf["load_duration_ms"] += reponse.get("load_duration", 0) / 1e6
-        perf["prompt_eval_duration_ms"] += reponse.get("prompt_eval_duration", 0) / 1e6
-        perf["token_generation_duration_ms"] += reponse.get("eval_duration", 0) / 1e6
         perf["tokens_generated"] += reponse.get("eval_count", 0)
         perf["tokens_used"] += reponse.get("prompt_eval_count", 0)
-        perf["eval_count"] += reponse.get("eval_count", 0)
-        perf["prompt_eval_count"] += reponse.get("prompt_eval_count", 0)
         
-        contenu_ia = json.loads(reponse['message']['content'])
+        # --- RÉCUPÉRATION ET NETTOYAGE CRITIQUE ---
+        raw_content = reponse['message']['content']
 
         try:
+            # 1. Supprimer le bloc de réflexion <think> de DeepSeek-R1
+            if "</think>" in raw_content:
+                raw_content = raw_content.split("</think>")[-1]
+
+            # 2. Extraire uniquement la partie entre les premières et dernières accolades
+            # Cela élimine les backticks ```json ou le texte parasite de Qwen
+            debut = raw_content.find("{")
+            fin = raw_content.rfind("}")
             
-            # 1. Supprimer les balises de réflexion de DeepSeek (si présentes)
-            if "</think>" in contenu_ia:
-                contenu_ia = contenu_ia.split("</think>")[-1].strip()
+            if debut == -1 or fin == -1:
+                raise ValueError("Aucun objet JSON trouvé dans la réponse")
+                
+            json_propre = raw_content[debut:fin+1]
+            content = json.loads(json_propre)
 
-            # 2. Supprimer les délimiteurs Markdown ```json ... ```
-            if contenu_ia.startswith("```"):
-                # Enlever la première ligne (ex: ```json)
-                lignes = contenu_ia.splitlines()
-                if lignes[0].startswith("```"):
-                    lignes = lignes[1:]
-                # Enlever la dernière ligne (ex: ```)
-                if lignes and lignes[-1].startswith("```"):
-                    lignes = lignes[:-1]
-                contenu_ia = "\n".join(lignes).strip()
-
-            # Maintenant on peut parser
-            content = json.loads(contenu_ia)
-
-            if "analyse" in content:
+            # 3. Insertion des données
+            if "liste_c" in content:
+                resultat_global["liste_c"].extend(content.get("liste_c", []))
+                resultat_global["liste_ll"].extend(content.get("liste_ll", []))
+                resultat_global["liste_explication"].extend(content.get("liste_explication", []))
+            elif "analyse" in content: # Fallback pour certains modèles
                 for item in content["analyse"]:
                     resultat_global["liste_c"].append(item.get("ligne_c", ""))
                     resultat_global["liste_ll"].append(item.get("instructions_ll", []))
                     resultat_global["liste_explication"].append(item.get("explications", []))
-            else:
-                # Format standard attendu
-                resultat_global["liste_c"].extend(content.get("liste_c", []))
-                resultat_global["liste_ll"].extend(content.get("liste_ll", []))
-                resultat_global["liste_explication"].extend(content.get("liste_explication", []))
+
         except Exception as e:
-            
             nb_lignes = len(chunk_llvm.splitlines())
-            # On récupère les 100 premiers caractères de la réponse pour comprendre
-            raw_text = reponse['message']['content'][:100].replace('\n', ' ')
-            
+            snippet = raw_content[:50].replace('\n', ' ')
             resultat_global["liste_c"].extend(["Erreur"] * nb_lignes)
-            # On affiche l'erreur Python + un aperçu de ce que l'IA a dit
-            resultat_global["liste_ll"].extend([[f"Erreur: {str(e)} | IA a dit: {raw_text}..."]] * nb_lignes)
+            resultat_global["liste_ll"].extend([[f"Erreur parsing: {str(e)} | Début: {snippet}"]] * nb_lignes)
             resultat_global["liste_explication"].extend([[""]] * nb_lignes)
 
     return resultat_global, perf
