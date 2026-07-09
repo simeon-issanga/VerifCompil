@@ -12,8 +12,8 @@ app = Flask(__name__)
 
 client = ollama.Client(host='http://ollama:11434')
 #MODEL="mistral-small"
-#MODEL = "deepseek-r1:14b"
-MODEL = "qwen2.5-coder:7b"
+MODEL = "deepseek-r1:14b"
+#MODEL = "qwen2.5-coder:7b"
 idM=0
 ############# main #############
 
