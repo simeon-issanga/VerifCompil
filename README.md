@@ -1,7 +1,11 @@
 # VerifCompil
 
 ## Description 
-Ce projet a été réalisé durant notre stage en Espagne. Il s'agit d'un site internet sur lequel on peut écrire/coller un code en C et renverra le code en .ll avec une explication grâce à  l'IA des différents blocs.
+
+```
+lien PDF
+```
+
 
 ## Compétences à développer 
 
@@ -31,7 +35,6 @@ Ce projet a été réalisé durant notre stage en Espagne. Il s'agit d'un site i
 ## Installation et Lancement
 
 * Docker & Docker Compose installés sur votre machine.
-* Une clé API
   
 1. Cloner le projet
   ```
