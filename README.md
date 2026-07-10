@@ -33,6 +33,7 @@
 ## Installation et Lancement
 
 * Docker & Docker Compose installés sur votre machine.
+* Vous devez posséder un GPU avec un minimum de capacité. (~16Go)
   
 1. Cloner le projet
   ```
@@ -48,7 +49,7 @@ mkdir -p config/env
 nano config/env/.env
 nano .env
 ```
-Ajoutez-y votre clé API
+Ajoutez-y vos variables d'environnements
 
 ```
 DB_USER=nom user de la bdd
