@@ -34,24 +34,24 @@
 
 ## Installation and Launch
 
-* Docker & Docker Compose installés sur votre machine.
-* Vous devez posséder un GPU avec un minimum de capacité. (~16Go)
+* Docker & Docker Compose must be installed on your machine.
+* You must have a GPU with a minimum capacity of (~16GB).
   
-1. Cloner le projet
+1. Clone the project
   ```
 git clone https://github.com/simeon-issanga/VerifCompil.git
 cd VerifCompil
 ```
 
-2. Configuration des variables d'environnement
-Créez un fichier `.env` dans le dossier `config/env/` :
+2. Configuring environment variables
+Create a file `.env`, in the file `config/env/` :
 
 ```
 mkdir -p config/env
 nano config/env/.env
 nano .env
 ```
-Ajoutez-y vos variables d'environnements
+Add your environment variables here
 
 ```
 DB_USER=nom user de la bdd
@@ -59,33 +59,29 @@ DB_PASSWORD=ton mot de passe
 DB_NAME=nom de la base de données
 ```
 
-3.  Lancement avec Docker
+3.  Launching with Docker
 ```
 docker compose up -d --build 
 ```
 
 ## CI/CD 
 
-Ce projet utilise GitHub Actions pour assurer une qualité de code constante :
+This project uses GitHub Actions to ensure consistent code quality:
 
-1. CI (Continuous Integration) : À chaque Push ou Pull Request, GitHub vérifie la syntaxe, compile le frontend et lance des tests d'intégration dans un environnement Docker éphémère.
+1. CI (Continuous Integration): With every push or pull request, GitHub checks the syntax, compiles the frontend and runs integration tests in a temporary Docker environment.
 
-2. CD (Continuous Deployment) : Si les tests sont validés, le projet est automatiquement déployé sur le serveur de production (Socarrat) via un Self-Hosted Runner.
+2. CD (Continuous Deployment): If the tests pass, the project is automatically deployed to the production server (Socarrat) via a self-hosted runner.
 
-## Technologie utilisées
+## Technologies used
 
-* Frontend : React.js, CodeMirror 6 (Éditeurs de code), Vite.
+* Frontend : React.js, CodeMirror 6 (lib), Vite.
 * Backend : Flask (Python 3.10), Clang/LLVM 15+.
-* IA : Ollama (3 modeles utilisés pour mesurer les performances)
+* IA : Ollama (3 models used to measure performance)
 * Serveur : Nginx (Reverse Proxy), Docker.
 
-## Contributeurs 
+## Contributors 
 
 * [Lucas Oustaloup](https://github.com/LucasOtlp)
 * [Siméon Issanga--Peyrot](https://github.com/simeon-issanga)
 
-
-
-Pour obtenir la différence entre deux passes
-diff -u pass1.ll pass2.ll
 
