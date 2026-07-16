@@ -3,6 +3,9 @@
 ## Description 
 
 [VerifCompil.pdf](https://github.com/user-attachments/files/29881163/VerifCompil.pdf)
+[schemas stage.pdf](https://github.com/user-attachments/files/30077356/schemas.stage.pdf)
+[performances des modèles stage.pdf](https://github.com/user-attachments/files/30077355/performances.des.modeles.stage.pdf)
+
 
 
 ## Compétences à développer 
