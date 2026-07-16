@@ -7,7 +7,7 @@
 
 
 
-## Compétences à développer 
+## Skills to develop 
 
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
@@ -19,20 +19,20 @@
 
 ![LLVM](https://img.shields.io/badge/LLVM-100000?style=for-the-badge&logo=llvm&logoColor=white)
 
-## 🚀 Fonctionnalités
+## 🚀 Features
 
-* 📤 Compilation en temps réel : Envoi de code C et génération immédiate de l'IR LLVM.
+* 📤 Real-time compilation: Sending C code and immediately generating the LLVM IR.
 
-* 🔍 Analyse des Passes : Extraction et affichage de chaque étape d'optimisation du compilateur Clang.
+* 🔍 Passe Analysis: Extracting and displaying each stage of the Clang compiler’s optimisation process.
 
-* ⚖️ Comparaison (Diff) : Visualisation ligne à ligne des changements entre deux passes consécutives.
+* ⚖️ Comparison (Diff): Line-by-line visualisation of the changes between two consecutive passes.
 
-* 🤖 Explication par IA : Utilisation de modèles de langage (LLM) pour expliquer la correspondance entre le code source et le code généré.
+* 🤖 AI explanation: Using large language models (LLMs) to explain the correspondence between the source code and the generated code.
 
-* 🐳 Full Dockerized : Déploiement simplifié via Docker Compose.
+* 🐳 Fully Dockerised: Simplified deployment via Docker Compose.
 
 
-## Installation et Lancement
+## Installation and Launch
 
 * Docker & Docker Compose installés sur votre machine.
 * Vous devez posséder un GPU avec un minimum de capacité. (~16Go)
